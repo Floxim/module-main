@@ -482,7 +482,7 @@ class Finder extends System\Finder
             }
             $name_conds [] = $cond;
         }
-        call_user_func_array(array($this, 'where_or'), $name_conds);
+        call_user_func_array(array($this, 'whereOr'), $name_conds);
     }
 
     /**
