@@ -441,7 +441,7 @@ class Finder extends System\Finder
         }
         $placeholder = $this->create($params);
         $placeholder->digSet('_meta.placeholder', $params + array('type' => $placeholder['type']));
-        $placeholder->digSet('_meta.placeholder_name', fx::data('component', $placeholder['type'])->get('item_name'));
+        $placeholder->digSet('_meta.placeholder_name', fx::data('component', $placeholder['type'])->getItemName());
         $placeholder->isAdderPlaceholder(true);
         // guess item's position here
         if ($collection) {

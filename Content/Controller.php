@@ -389,7 +389,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if (fx::isAdmin()) {
             $infoblock = fx::data('infoblock', $this->getParam('infoblock_id'));
             $component = $this->getComponent();
-            $adder_title = fx::alang('Add') . ' ' . $component['item_name'];//.' &rarr; '.$ib_name;
+            $adder_title = fx::alang('Add') . ' ' . $component->getItemName();//.' &rarr; '.$ib_name;
 
             $this->acceptContent(array(
                 'title'        => $adder_title,
@@ -400,7 +400,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
             if (count($res['items']) == 0) {
                 $this->_meta['hidden_placeholder'] = 'Infoblock "' . $infoblock['name'] . '" is empty. ' .
-                    'You can add ' . $component['item_name'] . ' here';
+                    'You can add ' . $component->getItemName() . ' here';
             }
         }
         return $res;
@@ -587,7 +587,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $component = $this->getComponent();
             $ib = fx::data('infoblock', $this->getParam('infoblock_id'));
             $this->_meta['hidden_placeholder'] = 'Infoblock "' . $ib['name'] . '" is empty. ' .
-                'Select ' . $component['item_name'] . ' to show here';
+                'Select ' . $component->getItemName() . ' to show here';
         }
         return $res;
     }
@@ -738,7 +738,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 }
             }
             if ($target_parent_id && $target_infoblock_id) {
-                $adder_title = fx::alang('Add') . ' ' . $component['item_name'];
+                $adder_title = fx::alang('Add') . ' ' . $component->getItemName();
                 $ctr->acceptContent(array(
                     'title'        => $adder_title,
                     'parent_id'    => $target_parent_id,
