@@ -28,7 +28,51 @@ class Finder extends System\Finder
                     break;
             }
         }
+        $relations ['component'] = array(
+            self::BELONGS_TO,
+            'component',
+            'type',
+            'keyword'
+        );
         return $relations;
+    }
+    
+    public function getTree($children_key = 'children')
+    {
+        $data = $this->all();
+        $tree = $this->makeTree($data, $children_key);
+        return $tree;
+    }
+    
+    public function makeTree($data, $children_key = 'children', $extra_root_ids = array())
+    {
+        $index_by_parent = array();
+
+        foreach ($data as $item) {
+            if (in_array($item['id'], $extra_root_ids)) {
+                continue;
+            }
+            $pid = $item['parent_id'];
+            if (!isset($index_by_parent[$pid])) {
+                $index_by_parent[$pid] = fx::collection();
+                $index_by_parent[$pid]->is_sortable = $data->is_sortable;
+                $index_by_parent[$pid]->addFilter('parent_id', $pid);
+            }
+            $index_by_parent[$pid] [] = $item;
+        }
+
+        foreach ($data as $item) {
+            if (isset($index_by_parent[$item['id']])) {
+                $item[$children_key] = $index_by_parent[$item['id']];
+                $data->findRemove(
+                    'id',
+                    $index_by_parent[$item['id']]->getValues('id')
+                );
+            } else {
+                $item[$children_key] = null;
+            }
+        }
+        return $data;
     }
 
     protected function getDefaultRelationFinder($rel)

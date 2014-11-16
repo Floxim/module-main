@@ -69,6 +69,14 @@ class Entity extends System\Entity implements Template\Entity
         return "content/" . $this->component_id;
     }
 
+    public function loadFromForm($form, $fields = null)
+    {
+        $vals = $this->getFromForm($form, $fields);
+        $this->setFieldValues($vals, $fields);
+        $this->bindForm($form);
+        return $this;
+    }
+    
     /*
      * Populates $this->data based on administrative forms
      */
@@ -77,11 +85,12 @@ class Entity extends System\Entity implements Template\Entity
         if (count($values) == 0) {
             return;
         }
-        fx::log('sfv', $values, $save_fields);
         $fields = $save_fields ? $this->getFields()->find('keyword', $save_fields) : $this->getFields();
         $result = array('status' => 'ok');
+        $val_keys = $values instanceof \Floxim\Floxim\System\Collection ? $values->keys() : array_keys($values);
         foreach ($fields as $field) {
             $field_keyword = $field['keyword'];
+            unset($val_keys[array_search($field_keyword, $val_keys)]);
             if (!isset($values[$field_keyword])) {
                 if ($field['type'] == Field\Entity::FIELD_MULTILINK) {
                     $value = array();
@@ -105,6 +114,9 @@ class Entity extends System\Entity implements Template\Entity
                 $result['text'][] = $field->getError();
                 $result['fields'][] = $field_keyword;
             }
+        }
+        foreach ($val_keys as $payload_key) {
+            $this->setPayload($payload_key, $values[$payload_key]);
         }
         fx::log('ready to save', $result, $this);
         return $result;
@@ -191,7 +203,7 @@ class Entity extends System\Entity implements Template\Entity
 
     public function getFormFieldParentId($field = null)
     {
-        if (!$this['id']) {
+        if (!$this['id'] && $this['parent_id']) {
             return;
         }
 
@@ -215,12 +227,14 @@ class Entity extends System\Entity implements Template\Entity
         };
         $get_values($parents);
         if (count($values) === 1) {
-            return;
+            //fx::debug('only');
+            //return;
         }
         $jsf = $field ? $field->getJsField($this) : array();
         $jsf['values'] = $values;
+        $jsf['hidden_on_one_value'] = true;
         $jsf['tab'] = 1;
-        return $jsf;;
+        return $jsf;
     }
 
     /**
@@ -439,7 +453,7 @@ class Entity extends System\Entity implements Template\Entity
                     // must be set
                     // @todo then we will cunning calculation
                     if (!isset($val->linker_map) || count($val->linker_map) != count($val)) {
-                        throw new Exception('Wrong linker map');
+                        throw new \Exception('Wrong linker map');
                     }
                     foreach ($val->linker_map as $linker_obj) {
                         $linker_obj[$related_field_keyword] = $this['id'];
@@ -622,6 +636,12 @@ class Entity extends System\Entity implements Template\Entity
      */
     public function setVirtualPath($path) {
         $this->path = fx::collection($path);
+        $this->has_virtual_path = true;
     }
     
+    protected $has_virtual_path = false;
+    
+    public function hasVirtualPath() {
+        return (bool) $this->has_virtual_path;
+    }
 }

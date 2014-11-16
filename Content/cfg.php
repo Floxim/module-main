@@ -13,6 +13,8 @@ $component = $this->getComponent();
 $content_exists = fx::content($component['keyword'])->contentExists();
 $is_new_infoblock = !$this->getParam('infoblock_id');
 
+$component_infoblocks = fx::data('infoblock')->getContentInfoblocks($component['keyword']);
+
 return array(
     'actions' => array(
         '*.*' => array(
@@ -131,6 +133,28 @@ return array(
         ),
         '*listing_by' => array(
             'disabled' => 1
+        ),
+        '*form_create' => array(
+            'check_context' => function() use ($component_infoblocks) {
+                return count($component_infoblocks) > 0;
+            },
+            'settings' => array(
+                'target_infoblock' => array(
+                    'type' => 'select',
+                    'label' => fx::alang('Target infoblock', 'controller_component'),
+                    'values' => $component_infoblocks->getSelectValues('id', 'name'),
+                    'hidden_on_one_value' => true
+                ),
+                'redirect_to' => array(
+                    'type' => 'select',
+                    'label' => fx::alang('After submission...', 'controller_component'),
+                    'values' => array(
+                        array('refresh', fx::alang('Refresh page')),
+                        array('new_page', fx::alang('Go to the created page')),
+                        array('parent_page', fx::alang('Go to the parent page'))
+                    )
+                )
+            )
         )
     )
 );

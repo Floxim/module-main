@@ -387,17 +387,21 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         });
         $res = $this->doList();
         if (fx::isAdmin()) {
-            $infoblock = fx::data('infoblock', $this->getParam('infoblock_id'));
+            
             $component = $this->getComponent();
-            $adder_title = fx::alang('Add') . ' ' . $component->getItemName();//.' &rarr; '.$ib_name;
+            $component_variants = $component->getAllVariants();
+            $infoblock = fx::data('infoblock', $this->getParam('infoblock_id'));
+            
+            foreach ($component_variants as $component_variant) {
+                $adder_title = fx::alang('Add') . ' ' . $component_variant->getItemName();//.' &rarr; '.$ib_name;
 
-            $this->acceptContent(array(
-                'title'        => $adder_title,
-                'parent_id'    => $this->getParentId(),
-                'type'         => $component['keyword'],
-                'infoblock_id' => $this->getParam('infoblock_id')
-            ));
-
+                $this->acceptContent(array(
+                    'title'        => $adder_title,
+                    'parent_id'    => $this->getParentId(),
+                    'type'         => $component_variant['keyword'],
+                    'infoblock_id' => $this->getParam('infoblock_id')
+                ));
+            }
             if (count($res['items']) == 0) {
                 $this->_meta['hidden_placeholder'] = 'Infoblock "' . $infoblock['name'] . '" is empty. ' .
                     'You can add ' . $component->getItemName() . ' here';
@@ -868,13 +872,62 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         return fx::collection();
     }
     
+    public function doFormCreate() 
+    {
+        $user = fx::env('user');
+        
+        $form  = new \Floxim\Form\Form();
+        
+        $item = $this->getFinder()->create();
+        
+        $target_infoblock = $this->getParam('target_infoblock');
+        $item['infoblock_id'] = $target_infoblock;
+        
+        if (!$user->can('see_create_form', $item)) {
+            return false;
+        }
+        $fields = $item->getFormFields();
+        $form->addFields($fields);
+        if ($form->isSent()) {
+            if ($user->can('create', $item)) {
+                $item->loadFromForm($form);
+                if ($item->validateWithForm()) {
+                    $item->save();
+                    $target_type = $this->getParam('redirect_to');
+                    switch ($target_type) {
+                        case 'refresh':
+                            fx::http()->refresh();
+                            break;
+                        case 'new_page':
+                            fx::log('go to nu usr', $item, $item['url']);
+                            fx::http()->redirect($item['url']);
+                            break;
+                        case 'parent_page':
+                            fx::http()->redirect($item['parent']['url']);
+                            break;
+                    }
+                } else {
+                    $form->addError(
+                        fx::lang('Unable to save ', 'controller_component') 
+                        . $item['component']->getItemName()
+                    );
+                }
+            }
+        }
+        return array('form' => $form, 'item' => $item);
+    }
+    
     public function doFormEdit() 
     {
+        $user = fx::env('user');
         $item_id = $this->getParam('item_id');
         if ($item_id) {
             $item = $this->getFinder()->getById($item_id);
         } else {
             $item = fx::env('page');
+        }
+        if (!$user->can('see_edit_form', $item)) {
+            return false;
         }
         $fields = $item->getFormFields();
         $form  = new \Floxim\Form\Form();
@@ -882,8 +935,40 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if ($form->isSent()) {
             $vals = $form->getValues();
             $item->setFieldValues($vals);
-            $item->save();
+            if ($user->can('edit', $item)) {
+                $item->save();
+            }
         }
         return array('form' => $form, 'item' => $item);
+    }
+    
+    public function doLivesearch()
+    {
+        $input = $_POST;
+        if (!isset($input['content_type'])) {
+            return;
+        }
+        $content_type = $input['content_type'];
+        $finder = fx::data($content_type);
+        if (($finder instanceof \Floxim\Main\Content\Finder) and $content_type != 'user') {
+            $finder->where('site_id', fx::env('site')->get('id'));
+        }
+        if (isset($input['skip_ids']) && is_array($input['skip_ids'])) {
+            $finder->where('id', $input['skip_ids'], 'NOT IN');
+        }
+        if (isset($input['ids'])) {
+            $finder->where('id', $input['ids']);
+        }
+        if (isset($input['conditions'])) {
+            foreach ($input['conditions'] as $cond_field => $cond_val) {
+                if (is_array($cond_val)) {
+                    $finder->where($cond_field, $cond_val[0], $cond_val[1]);
+                } else {
+                    $finder->where($cond_field, $cond_val);
+                }
+            }
+        }
+        $res = $finder->livesearch($_POST['term'], (isset($_POST['limit']) && $_POST['limit']) ? $_POST['limit'] : 20);
+        fx::complete($res);
     }
 }
