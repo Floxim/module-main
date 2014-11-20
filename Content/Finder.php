@@ -9,8 +9,14 @@ use Floxim\Floxim\System\Fx as fx;
 class Finder extends System\Finder
 {
 
+    static $rel_time = 0;
     public function relations()
     {
+        static $res_relations = null;
+        if (!is_null($res_relations)) {
+            return $res_relations;
+        }
+        
         $relations = array();
         $fields = fx::data('component', $this->component_id)->
         allFields()->
@@ -34,6 +40,8 @@ class Finder extends System\Finder
             'type',
             'keyword'
         );
+        
+        $res_relations = $relations;
         return $relations;
     }
     

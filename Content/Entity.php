@@ -33,7 +33,6 @@ class Entity extends System\Entity implements Template\Entity
             }
         }
         return ucfirst($this->_type);
-        return ($full ? 'content_' : '') . $this->_type;
     }
 
     public function setComponentId($component_id)
