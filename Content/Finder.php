@@ -10,17 +10,18 @@ class Finder extends System\Finder
 {
 
     static $rel_time = 0;
+    static $stored_relations = array();
     public function relations()
     {
-        static $res_relations = null;
-        if (!is_null($res_relations)) {
-            return $res_relations;
+        $class = get_called_class();
+        if (isset(self::$stored_relations[$class])) {
+            return static::$stored_relations[$class];
         }
         
         $relations = array();
-        $fields = fx::data('component', $this->component_id)->
-        allFields()->
-        find('type', array(Field\Entity::FIELD_LINK, Field\Entity::FIELD_MULTILINK));
+            $fields = fx::data('component', $this->component_id)->
+            allFields()->
+            find('type', array(Field\Entity::FIELD_LINK, Field\Entity::FIELD_MULTILINK));
         foreach ($fields as $f) {
             if (!($relation = $f->getRelation())) {
                 continue;
@@ -41,7 +42,7 @@ class Finder extends System\Finder
             'keyword'
         );
         
-        $res_relations = $relations;
+        self::$stored_relations[$class] = $relations;
         return $relations;
     }
     
