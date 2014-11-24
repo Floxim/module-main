@@ -8,7 +8,7 @@ use Floxim\Floxim\System\Fx as fx;
 class Controller extends \Floxim\Floxim\Controller\Frontoffice
 {
 
-    protected function countParentId()
+    public function countParentId()
     {
         if (preg_match("~^listInfoblock~", fx::util()->underscoreToCamel($this->action, false))) {
             $this->setParam('parent_id', $this->getParentId());
