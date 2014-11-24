@@ -640,7 +640,10 @@ class Entity extends System\Entity implements Template\Entity
     
     protected $has_virtual_path = false;
     
-    public function hasVirtualPath() {
-        return (bool) $this->has_virtual_path;
+    public function hasVirtualPath($set = null) {
+        if (is_null($set)) {
+            return (bool) $this->has_virtual_path;
+        }
+        $this->has_virtual_path = (bool) $set;
     }
 }

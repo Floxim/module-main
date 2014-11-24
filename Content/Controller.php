@@ -344,13 +344,13 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     public function doList()
     {
         $f = $this->getFinder();
-        $this->trigger('query_ready', $f);
+        $this->trigger('query_ready', array('query' => $f));
         $items = $f->all();
         
         if (count($items) === 0) {
             $this->_meta['hidden'] = true;
         }
-        $this->trigger('items_ready', $items);
+        $this->trigger('items_ready', array('items' => $items));
         $res = array('items' => $items);
         if (($pagination = $this->getPagination())) {
             $res ['pagination'] = $pagination;
@@ -375,7 +375,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if ($this->getParam('is_fake')) {
             return array('items' => $this->getFakeItems(3));
         }
-        $this->listen('query_ready', function ($q, $ctr) {
+        $this->listen('query_ready', function ($e) {
+            $q = $e['query'];
+            $ctr = $e['controller'];
             $parent_id = $ctr->getParam('parent_id');
             if ($parent_id && !$ctr->getParam('skip_parent_filter')) {
                 $q->where('parent_id', $parent_id);
@@ -530,11 +532,13 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $content_ids = $linkers->getValues('linked_id');
         }
 
-        $this->listen('query_ready', function ($q) use ($content_ids) {
-            $q->where('id', $content_ids);
+        $this->listen('query_ready', function ($e) use ($content_ids) {
+            $e['query']->where('id', $content_ids);
         });
         if ($linkers) {
-            $this->listen('items_ready', function ($c, $ctr) use ($linkers) {
+            $this->listen('items_ready', function ($e) use ($linkers) {
+                $c = $e['items'];
+                $ctr = $e['controller'];
                 if ($ctr->getParam('sorting') === 'manual') {
                     $c->sort(function ($a, $b) use ($linkers) {
                         $a_l = $linkers->findOne('linked_id', $a['id']);
@@ -554,7 +558,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 }
             });
         } else {
-            $this->listen('items_ready', function ($c, $ctr) use ($content_ids) {
+            $this->listen('items_ready', function ($e) use ($content_ids) {
+                $c = $e['items'];
+                $ctr = $e['controller'];
                 if ($ctr->getParam('sorting') === 'manual') {
                     $c->sort(function ($a, $b) use ($content_ids) {
                         $a_priority = array_search($a['id'], $content_ids);
@@ -598,7 +604,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     public function doListFiltered()
     {
-        $this->listen('query_ready', function ($q, $ctr) {
+        $this->listen('query_ready', function ($e) {
+            $q = $e['query'];
+            $ctr = $e['controller'];
             $component = $ctr->getComponent();
             $fields = $component->allFields();
             $conditions = fx::collection($ctr->getParam('conditions'));
