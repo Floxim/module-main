@@ -32,7 +32,7 @@ class Entity extends System\Entity implements Template\Entity
                 $this->_type = fx::data('component', $this->component_id)->get('keyword');
             }
         }
-        return ucfirst($this->_type);
+        return $this->_type;
     }
 
     public function setComponentId($component_id)
@@ -269,7 +269,8 @@ class Entity extends System\Entity implements Template\Entity
             $this->get('id'),
             $this->getType(false)
         );
-
+        
+        
         if (is_object($collection) && $collection->linker_map && isset($collection->linker_map[$index])) {
             $linker = $collection->linker_map[$index];
             $entity_meta[] = $linker['id'];
@@ -279,6 +280,9 @@ class Entity extends System\Entity implements Template\Entity
             'data-fx_entity' => $entity_meta,
             'class'          => 'fx_entity' . (is_object($collection) && $collection->is_sortable ? ' fx_sortable' : '')
         );
+        
+        $com = fx::data('component', $this->getComponentId());
+        $entity_atts['data-fx_entity_name'] = $com->getItemName();
 
         if ($this->isAdderPlaceholder()) {
             $entity_atts['class'] .= ' fx_entity_adder_placeholder';
@@ -510,7 +514,7 @@ class Entity extends System\Entity implements Template\Entity
             }
         }
 
-        if (!$this->_skip_cascade_delete_children) {
+        if (!isset($this->_skip_cascade_delete_children) || !$this->_skip_cascade_delete_children) {
             $this->deleteChildren();
         }
     }

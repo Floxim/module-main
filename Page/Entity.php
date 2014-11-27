@@ -145,7 +145,7 @@ class Entity extends \Floxim\Main\Content\Entity
         all()->
         apply($killer);
         // @TODO: save for history
-        if (!$this->_skip_cascade_delete_children) {
+        if (!isset($this->_skip_cascade_delete_children) || !$this->_skip_cascade_delete_children) {
             $nested_ibs = $this->getNestedInfoblocks(true);
             foreach ($nested_ibs as $ib) {
                 $ib->delete();
