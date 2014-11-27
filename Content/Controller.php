@@ -622,12 +622,14 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             foreach ($conditions as $condition) {
                 if (
                     $condition['name'] === 'parent_id'
+                    && isset($condition['value'])    
                     && is_array($condition['value'])
                     && count($condition['value']) === 1
                 ) {
                     $target_parent_id = current($condition['value']);
                 } elseif (
                     $condition['name'] === 'infoblock_id'
+                    && isset($condition['value'])
                     && is_array($condition['value'])
                     && count($condition['value']) === 1
                 ) {

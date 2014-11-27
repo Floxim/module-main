@@ -134,9 +134,8 @@ class Finder extends System\Finder
             $extensions = fx::db()->getIndexedResults($q);
 
             foreach ($data as $data_index => $data_item) {
-                $extension = $extensions[$data_item['id']];
-                if ($extension) {
-                    $data[$data_index] = array_merge($data_item, $extension);
+                if (isset($extensions[$data_item['id']])) {
+                    $data[$data_index] = array_merge($data_item, $extensions[$data_item['id']]);
                 }
             }
         }
@@ -274,7 +273,7 @@ class Finder extends System\Finder
             } catch (\Exception $e) {
             }
         }
-        Finder::$content_classes[$data['type']] = $class_name;
+        Finder::$content_classes[$c_type] = $class_name;
         return $class_name;
     }
 
@@ -469,7 +468,7 @@ class Finder extends System\Finder
         $params = array();
         foreach ($this->where as $cond) {
             // original field
-            $field = $cond[3];
+            $field = isset($cond[3]) ? $cond[3] : null;
             // collection was found by id, adder is impossible
             if ($field === 'id') {
                 return;

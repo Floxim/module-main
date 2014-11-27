@@ -186,7 +186,7 @@ class Entity extends System\Entity implements Template\Entity
                 $jsf = $field->getJsField($this);
             }
             if ($jsf) {
-                if (!$jsf['tab']) {
+                if (!isset($jsf['tab']) || !$jsf['tab']) {
                     if ($field['form_tab']) {
                         $jsf['tab'] = $field['form_tab'];
                     } else {
@@ -270,15 +270,14 @@ class Entity extends System\Entity implements Template\Entity
             $this->getType(false)
         );
 
-        if ($collection->linker_map && isset($collection->linker_map[$index])) {
+        if (is_object($collection) && $collection->linker_map && isset($collection->linker_map[$index])) {
             $linker = $collection->linker_map[$index];
             $entity_meta[] = $linker['id'];
             $entity_meta[] = $linker['type'];
         }
         $entity_atts = array(
             'data-fx_entity' => $entity_meta,
-            // todo: psr0 need verify
-            'class'          => 'fx_entity' . ($collection->is_sortable ? ' fx_sortable' : '')
+            'class'          => 'fx_entity' . (is_object($collection) && $collection->is_sortable ? ' fx_sortable' : '')
         );
 
         if ($this->isAdderPlaceholder()) {
