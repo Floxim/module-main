@@ -98,7 +98,6 @@ class Entity extends \Floxim\Main\Content\Entity
     protected function afterUpdate()
     {
         parent::afterUpdate();
-
         // urlAlias update
         if (in_array('url', $this->modified)) {
             // prev alias
@@ -107,11 +106,11 @@ class Entity extends \Floxim\Main\Content\Entity
             where('page_id', $this['id'])->
             one();
             if (
-                !empty($modified_alias) &&
+                //!empty($modified_alias) &&
                 $this['url']
             ) {
                 // check urlAlias history
-                if ($modified_alias['page_id'] == $this['id']) {
+                if ($modified_alias && $modified_alias['page_id'] == $this['id']) {
                     // get already exist old alias
                     $existed_alias = fx::data('urlAlias')->
                     where('url', $this['url'])->
