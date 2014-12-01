@@ -140,9 +140,9 @@ class Entity extends \Floxim\Main\Content\Entity
         };
         // drop all urlAlias
         fx::data('urlAlias')->
-        where('page_id', $this['id'])->
-        all()->
-        apply($killer);
+            where('page_id', $this['id'])->
+            all()->
+            apply($killer);
         // @TODO: save for history
         if (!isset($this->_skip_cascade_delete_children) || !$this->_skip_cascade_delete_children) {
             $nested_ibs = $this->getNestedInfoblocks(true);
@@ -168,14 +168,16 @@ class Entity extends \Floxim\Main\Content\Entity
      */
     public function getNestedInfoblocks($with_own = true)
     {
-        $q = fx::data('page')->descendantsOf($this, $with_own);
+        $q = fx::data('page')->descendantsOf($this, false);
         $q->join('{{infoblock}}', '{{infoblock}}.page_id = {{floxim_main_content}}.id');
-        $q->select('{{infoblock}}.id');
-        $ids = $q->getData()->getValues('id');
-        if (count($ids) === 0) {
+        $page_ids = $q->all()->getValues('id');
+        if ($with_own) {
+            $page_ids []= $this['id'];
+        }
+        if (count($page_ids) === 0) {
             return fx::collection();
         }
-        $infoblocks = fx::data('infoblock', $ids);
+        $infoblocks = fx::data('infoblock')->where('page_id', $page_ids)->all();
         return $infoblocks;
     }
 
