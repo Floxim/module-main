@@ -42,20 +42,15 @@ class Finder extends \Floxim\Main\Content\Finder
         }
         // get alias by url
         $alias = fx::data('urlAlias')->
-        where('url', $url_variants)->
-        where('site_id', $site_id)->
-        one();
+            where('url', $url_variants)->
+            where('site_id', $site_id)->
+            one();
+        
         if (!$alias) {
             return null;
         }
         // get page by id
         $page = $this->getById($alias['page_id']);
         return $page;
-    }
-
-    public function named($name)
-    {
-        $this->where('name', '%' . $name . '%', 'like');
-        return $this;
     }
 }

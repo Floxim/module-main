@@ -19,9 +19,9 @@ class Finder extends System\Finder
         }
         
         $relations = array();
-            $fields = fx::data('component', $this->component_id)->
-            allFields()->
-            find('type', array(Field\Entity::FIELD_LINK, Field\Entity::FIELD_MULTILINK));
+        $fields = fx::component($this->component_id)->
+                getAllFields()->
+                find('type', array(Field\Entity::FIELD_LINK, Field\Entity::FIELD_MULTILINK));
         foreach ($fields as $f) {
             if (!($relation = $f->getRelation())) {
                 continue;
@@ -101,7 +101,7 @@ class Finder extends System\Finder
         if (count($types_by_id) == 0) {
             return $data;
         }
-        $base_component = fx::data('component', $this->component_id);
+        $base_component = fx::component($this->component_id);
         $base_type = $base_component['keyword'];
         $base_table = $base_component->getContentTable();
         $types = array();
@@ -113,6 +113,7 @@ class Finder extends System\Finder
                 $types[$type] [] = $id;
             }
         }
+        
         foreach ($types as $type => $ids) {
             if (!$type) {
                 continue;
@@ -147,11 +148,10 @@ class Finder extends System\Finder
     public function getTables()
     {
         if (isset(self::$_com_tables_cache[$this->component_id])) {
-            
             $cached = self::$_com_tables_cache[$this->component_id];
             return $cached;
         }
-        $chain = fx::data('component', $this->component_id)->getChain();
+        $chain = $this->getComponent()->getChain();
         $tables = array();
         foreach ($chain as $comp) {
             $tables [] = $comp->getContentTable();
@@ -171,10 +171,7 @@ class Finder extends System\Finder
 
     public function setComponent($component_id_or_code)
     {
-        // todo: psr0 need remove after rename tables
-        // $component_id_or_code = str_replace('floxim.main.', '', $component_id_or_code);
-
-        $component = fx::data('component', $component_id_or_code);
+        $component = fx::component($component_id_or_code);
         if (!$component) {
             die("Component not found: " . $component_id_or_code);
         }
@@ -185,7 +182,7 @@ class Finder extends System\Finder
 
     public function getComponent()
     {
-        return fx::data('component', $this->component_id);
+        return fx::component($this->component_id);
     }
 
     public function contentExists()
@@ -212,7 +209,7 @@ class Finder extends System\Finder
     {
         $obj = parent::create($data);
 
-        $component = fx::data('component', $this->component_id);
+        $component = fx::component($this->component_id);
 
         $obj['created'] = date("Y-m-d H:i:s");
         if ($component['keyword'] != 'floxim.user.user' && ($user = fx::env()->getUser())) {
@@ -223,7 +220,7 @@ class Finder extends System\Finder
         if (!isset($data['site_id'])) {
             $obj['site_id'] = fx::env('site')->get('id');
         }
-        $fields = $component->allFields()->find('default', '', System\Collection::FILTER_NEQ);
+        $fields = $component->getAllFields()->find('default', '', System\Collection::FILTER_NEQ);
         foreach ($fields as $f) {
             if (!isset($obj[$f['keyword']])) {
                 if ($f['type'] == Field\Entity::FIELD_DATETIME) {
@@ -245,34 +242,21 @@ class Finder extends System\Finder
 
     protected static $content_classes = array();
 
-    public function getClassName($data = null)
+    public function getEntityClassName($data = null)
     {
-        if ($data && isset($data['type'])) {
-            if (isset(Finder::$content_classes[$data['type']])) {
-                return Finder::$content_classes[$data['type']];
-            }
+        if (!is_null($data) && isset($data['type'])) {
             $c_type = $data['type'];
-            $component = fx::data('component', $c_type);
         } else {
-            $component = fx::data('component', $this->component_id);
+            $component = fx::component($this->component_id);
             $c_type = $component['keyword'];
         }
-        if (!$component) {
-            throw new \Exception("No component: " . $c_type);
+        
+        if (isset(Finder::$content_classes[$c_type])) {
+            return Finder::$content_classes[$c_type];
         }
-        $chain = array_reverse($component->getChain());
-
-        $exists = false;
-
-        while (!$exists && count($chain) > 0) {
-            $c_level = array_shift($chain);
-            $class_namespace = fx::getComponentNamespace($c_level['keyword']);
-            $class_name = $class_namespace . '\\Entity';
-            try {
-                $exists = class_exists($class_name);
-            } catch (\Exception $e) {
-            }
-        }
+        
+        $class_namespace = fx::getComponentNamespace($c_type);
+        $class_name = $class_namespace.'\\Entity';
         Finder::$content_classes[$c_type] = $class_name;
         return $class_name;
     }
@@ -284,9 +268,9 @@ class Finder extends System\Finder
      */
     public function entity($data = array())
     {
-        $classname = $this->getClassName($data);
+        $classname = $this->getEntityClassName($data);
         if (isset($data['type'])) {
-            $component_id = fx::data('component', $data['type'])->get('id');
+            $component_id = fx::component($data['type'])->get('id');
         } else {
             $component_id = $this->component_id;
         }
@@ -356,7 +340,7 @@ class Finder extends System\Finder
     public function insert($data)
     {
         if (!isset($data['type'])) {
-            throw  new Exception('Can not save entity with no type specified');
+            throw  new \Exception('Can not save entity with no type specified');
         }
         $set = $this->setStatement($data);
 
@@ -411,7 +395,7 @@ class Finder extends System\Finder
     protected function setStatement($data)
     {
         $res = array();
-        $chain = fx::data('component', $this->component_id)->getChain();
+        $chain = fx::component($this->component_id)->getChain();
         foreach ($chain as $level_component) {
             $table_res = array();
             $fields = $level_component->fields();
@@ -493,7 +477,7 @@ class Finder extends System\Finder
         }
         $placeholder = $this->create($params);
         $placeholder->digSet('_meta.placeholder', $params + array('type' => $placeholder['type']));
-        $placeholder->digSet('_meta.placeholder_name', fx::data('component', $placeholder['type'])->getItemName());
+        $placeholder->digSet('_meta.placeholder_name', $placeholder->getComponent()->getItemName());
         $placeholder->isAdderPlaceholder(true);
         // guess item's position here
         if ($collection) {

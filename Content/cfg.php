@@ -4,7 +4,7 @@ use Floxim\Floxim\System\Fx as fx;
 
 $sort_fields = $this
             ->getComponent()
-            ->allFields()
+            ->getAllFields()
             ->find('type', \Floxim\Floxim\Component\Field\Entity::FIELD_MULTILINK, '!=')
             ->find('type', \Floxim\Floxim\Component\Field\Entity::FIELD_MULTILINK, '!=')
             ->getValues(fx::isAdmin() ? 'name' : 'id', 'keyword');

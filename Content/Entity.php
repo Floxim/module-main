@@ -18,34 +18,36 @@ class Entity extends System\Entity implements Template\Entity
         parent::__construct($input);
         return $this;
     }
-
-    /*
-     * Returns the type of the form "content_page"
-     * And if $full = false type "page"
-     */
-    public function getType($full = true)
-    {
-        if (is_null($this->_type)) {
-            if (!$this->component_id) {
-                $this->_type = parent::getType();
-            } else {
-                $this->_type = fx::data('component', $this->component_id)->get('keyword');
-            }
-        }
-        return $this->_type;
+    
+    public function getAvailableOffsets() {
+        return $this->getComponent()->getAvailableEntityOffsets();
     }
 
-    public function setComponentId($component_id)
+    protected $type = null;
+    /*
+     * Returns the keyword of entity component
+     */
+    public function getType()
     {
-        if ($this->component_id && $component_id != $this->component_id) {
-            throw new \Exception("Component id can not be changed");
+        if (is_null($this->type)) {
+            $this->type = $this->getComponent()->get('keyword');
         }
-        $this->component_id = intval($component_id);
+        return $this->type;
     }
 
     public function getComponentId()
     {
         return $this->component_id;
+    }
+    
+    /**
+     * Get entity component
+     * @return \Floxim\Floxim\Component\Component\Entity
+     */
+    public function getComponent()
+    {
+        $component = fx::component($this->component_id);
+        return $component;
     }
 
     public function isInstanceof($type)
@@ -54,7 +56,7 @@ class Entity extends System\Entity implements Template\Entity
         if ($this['type'] == $type) {
             return true;
         }
-        $chain = fx::data('component', $this->getComponentId())->getChain();
+        $chain = $this->getComponent()->getChain();
         foreach ($chain as $com) {
             if ($com['keyword'] == $type) {
                 return true;
@@ -117,7 +119,6 @@ class Entity extends System\Entity implements Template\Entity
         foreach ($val_keys as $payload_key) {
             $this->setPayload($payload_key, $values[$payload_key]);
         }
-        fx::log('ready to save', $result, $this);
         return $result;
     }
 
@@ -281,7 +282,7 @@ class Entity extends System\Entity implements Template\Entity
             'class'          => 'fx_entity' . (is_object($collection) && $collection->is_sortable ? ' fx_sortable' : '')
         );
         
-        $com = fx::data('component', $this->getComponentId());
+        $com = $this->getComponent();
         $entity_atts['data-fx_entity_name'] = $com->getItemName();
 
         if ($this->isAdderPlaceholder()) {
@@ -487,7 +488,7 @@ class Entity extends System\Entity implements Template\Entity
 
         if (!isset(self::$content_fields_by_component[$com_id])) {
             $fields = array();
-            foreach (fx::data('component', $com_id)->allFields() as $f) {
+            foreach ($this->getComponent()->getAllFields() as $f) {
                 $fields[$f['keyword']] = $f;
             }
             self::$content_fields_by_component[$com_id] = fx::collection($fields);

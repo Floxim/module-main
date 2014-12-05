@@ -190,7 +190,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $com = $this->getComponent();
         $searchable_fields =
             $com
-                ->allFields()
+                ->getAllFields()
                 ->find('type', Field\Entity::FIELD_IMAGE, '!=');
         foreach ($searchable_fields as $field) {
             $res = array(
@@ -242,9 +242,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
          */
         $link_fields = $this->
         getComponent()->
-        allFields()->
-        find('type', array(Field\Entity::FIELD_LINK, Field\Entity::FIELD_MULTILINK))->
-        find('type_of_edit', Field\Entity::EDIT_NONE, System\Collection::FILTER_NEQ);
+            getAllFields()->
+            find('type', array(Field\Entity::FIELD_LINK, Field\Entity::FIELD_MULTILINK))->
+            find('type_of_edit', Field\Entity::EDIT_NONE, System\Collection::FILTER_NEQ);
         $fields = array();
         foreach ($link_fields as $lf) {
             if ($lf['type'] == Field\Entity::FIELD_LINK) {
@@ -608,7 +608,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $q = $e['query'];
             $ctr = $e['controller'];
             $component = $ctr->getComponent();
-            $fields = $component->allFields();
+            $fields = $component->getAllFields();
             $conditions = fx::collection($ctr->getParam('conditions'));
             if (!$conditions->findOne('name', 'site_id')) {
                 $conditions[] = array(
@@ -792,7 +792,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
      */
     public function getComponent()
     {
-        return fx::data('component', $this->getContentType());
+        return fx::component($this->getContentType());
     }
 
 
@@ -851,7 +851,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $vars = array();
         $com = $this->getComponent();
         $chain = $com->getChain();
-        $chain = array_reverse($chain);
+        $chain = $chain->reverse();
         foreach ($chain as $chain_item) {
             $vars [] = $chain_item['keyword'];
         }
