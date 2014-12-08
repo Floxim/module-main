@@ -147,7 +147,16 @@ class Entity extends System\Entity implements Template\Entity
         } else {
             $cf = $fields[$field_keyword];
             if (!$cf) {
-                return false;
+                $offsets = $this->getAvailableOffsets();
+                if (isset($offsets[$field_keyword])) {
+                    $offset_meta = $offsets[$field_keyword];
+                    if ($offset_meta['type'] === self::OFFSET_SELECT) {
+                        $cf = $fields[$offset_meta['real_offset']];
+                    }
+                }
+                if (!$cf) {
+                    return false;
+                }
             }
             $field_meta = array(
                 'var_type'        => 'content',
@@ -166,6 +175,10 @@ class Entity extends System\Entity implements Template\Entity
             }
             if ($field_meta['type'] === 'html' && $cf['format']['nl2br']) {
                 $field_meta['linebreaks'] = true;
+            }
+            if ($cf->type === 'select') {
+                $field_meta['values'] = $cf->getSelectValues();
+                $field_meta['value'] = $this[$cf['keyword']];
             }
         }
         return $field_meta;
