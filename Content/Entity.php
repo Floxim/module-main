@@ -176,6 +176,7 @@ class Entity extends System\Entity implements Template\Entity
         $all_fields = $this->getFields();
         $form_fields = array();
         $coms = array();
+        $content_com_id = fx::component('content')->get('id');
         foreach ($all_fields as $field) {
             if ($field['type_of_edit'] == Field\Entity::EDIT_NONE) {
                 continue;
@@ -193,6 +194,9 @@ class Entity extends System\Entity implements Template\Entity
                     } else {
                         $coms [$field['component_id']] = true;
                         $jsf['tab'] = count($coms);
+                        if ($field['component_id'] !== $content_com_id) {
+                            $jsf['tab']--;
+                        }
                     }
                 }
                 $form_fields[] = $jsf;
@@ -541,6 +545,23 @@ class Entity extends System\Entity implements Template\Entity
             $old_value = $this->modified_data[$img_field['keyword']];
             if (fx::path()->isFile($old_value)) {
                 fx::files()->rm($old_value);
+            }
+        }
+        
+        /*
+         * Update is_branch_published for nested nodes
+         */
+        $new_publish_status = null;
+        if ($this->isModified('is_published')) {
+            $new_publish_status = $this['is_published'];
+        } elseif ($this->isModified('is_branch_published')) {
+            $new_publish_status = $this['is_branch_published'];
+        }
+        if (!is_null($new_publish_status)) {
+            $children = fx::data('content')->where('parent_id', $this['id'])->all();
+            foreach ($children as $child) {
+                $child['is_branch_published'] = !$new_publish_status ? 0 : $this['is_published'];
+                $child->save();
             }
         }
 

@@ -215,7 +215,6 @@ class Finder extends System\Finder
         if ($component['keyword'] != 'floxim.user.user' && ($user = fx::env()->getUser())) {
             $obj['user_id'] = $user['id'];
         }
-        $obj['checked'] = 1;
         $obj['type'] = $component['keyword'];
         if (!isset($data['site_id'])) {
             $obj['site_id'] = fx::env('site')->get('id');
@@ -404,7 +403,6 @@ class Finder extends System\Finder
             if ($level_component['keyword'] == 'floxim.main.content') {
                 $field_keywords = array_merge($field_keywords, array(
                     'priority',
-                    'checked',
                     'last_updated',
                     'type',
                     'infoblock_id',

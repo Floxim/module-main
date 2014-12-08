@@ -807,6 +807,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             return $this->_finder;
         }
         $finder = fx::data($this->getContentType());
+        if (!fx::isAdmin()) {
+            $finder
+                ->where('is_published', 1)
+                ->where('is_branch_published', 1);
+        }
         $show_pagination = $this->getParam('pagination');
         $c_page = $this->getCurrentPageNumber();
         $limit = $this->getParam('limit');
