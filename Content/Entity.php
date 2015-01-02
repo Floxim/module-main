@@ -215,6 +215,8 @@ class Entity extends System\Entity implements Template\Entity
                 $form_fields[] = $jsf;
             }
         }
+        $form_fields = fx::collection($form_fields);
+        fx::trigger('form_fields_ready', array('entity' => $this, 'fields' => $form_fields));
         return $form_fields;
     }
 
