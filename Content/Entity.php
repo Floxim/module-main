@@ -282,6 +282,11 @@ class Entity extends System\Entity implements Template\Entity
         }
         return $finder;
     }
+    
+    public function isVisible()
+    {
+        return (bool) $this['is_published'];
+    }
 
     public function getTemplateRecordAtts($collection, $index)
     {
@@ -289,7 +294,6 @@ class Entity extends System\Entity implements Template\Entity
             $this->get('id'),
             $this->getType(false)
         );
-        
         
         if (is_object($collection) && $collection->linker_map && isset($collection->linker_map[$index])) {
             $linker = $collection->linker_map[$index];
@@ -300,6 +304,10 @@ class Entity extends System\Entity implements Template\Entity
             'data-fx_entity' => $entity_meta,
             'class'          => 'fx_entity' . (is_object($collection) && $collection->is_sortable ? ' fx_sortable' : '')
         );
+        
+        if (!$this->isVisible()) {
+            $entity_atts['class'] .= ' fx_entity_hidden'.(!$collection || count($collection) === 1 ? '_single' : '');
+        }
         
         $com = $this->getComponent();
         $entity_atts['data-fx_entity_name'] = $com->getItemName();
