@@ -247,7 +247,21 @@ class Entity extends System\Entity implements Template\Entity
             //fx::debug('only');
             //return;
         }
+        $value_found = false;
+        if ($this['parent_id']) {
+            foreach ($values as $v) {
+                if ($v[0] === $this['parent_id']) {
+                    $value_found = true;
+                    break;
+                }
+            }
+        }
         $jsf = $field ? $field->getJsField($this) : array();
+        if (!$value_found) {
+            return;
+            //$jsf['type'] = 'string';
+            //return $jsf;
+        }
         $jsf['values'] = $values;
         $jsf['hidden_on_one_value'] = true;
         $jsf['tab'] = 1;

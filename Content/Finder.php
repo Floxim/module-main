@@ -221,7 +221,10 @@ class Finder extends System\Finder
         }
         $fields = $component->getAllFields()->find('default', '', System\Collection::FILTER_NEQ);
         foreach ($fields as $f) {
-            if (!isset($obj[$f['keyword']])) {
+            if ($f['default'] === 'null') {
+                continue;
+            }
+            if (!isset($data[$f['keyword']])) {
                 if ($f['type'] == Field\Entity::FIELD_DATETIME) {
                     $obj[$f['keyword']] = date('Y-m-d H:i:s');
                 } else {
@@ -483,7 +486,7 @@ class Finder extends System\Finder
         }
         return $placeholder;
     }
-
+    
     protected function livesearchApplyTerms($terms)
     {
         $table = $this->getColTable('name');

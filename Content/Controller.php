@@ -46,6 +46,10 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $name = $this->_content_type;
         return $name;
     }
+    
+    public function getInfoblock() {
+        return fx::data('infoblock', $this->getParam('infoblock_id'));
+    }
 
     public function saveSelectedLinkers($ids)
     {
@@ -420,19 +424,42 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 'type'         => $this->getContentType()
             ), $params
         );
+        $component = fx::component($params['type']);
+        $has_title = isset($params['title']);
+        if (!$has_title) {
+            $params['title'] = fx::alang('Add') . ' ' . $component->getItemName();
+        }
+
         if (!is_null($entity)) {
             $meta = isset($entity['_meta']) ? $entity['_meta'] : array();
+            
+            // by default add items as children of the entity
+            if (!isset($params['parent_id']) && !isset($params['rel_field'])) {
+                $params['parent_id'] = $entity['id'];
+            }
+            
             if (!isset($meta['accept_content'])) {
                 $meta['accept_content'] = array();
             }
             $meta['accept_content'][] = $params;
             $entity['_meta'] = $meta;
-            return;
+        } else {
+            if (!isset($this->_meta['accept_content'])) {
+                $this->_meta['accept_content'] = array();
+            }
+            $this->_meta['accept_content'] [] = $params;
         }
-        if (!isset($this->_meta['accept_content'])) {
-            $this->_meta['accept_content'] = array();
+        
+        if (isset($params['with_extensions']) && $params['with_extensions']) {
+            $extensions =  $component->getAllChildren();
+            foreach ($extensions as $extension) {
+                $e_name = $extension->getItemName();
+                $this->acceptContent(array(
+                    'title' => $has_title ? $params['title']. ' / '.$e_name : fx::alang('Add'). ' '.$e_name,
+                    'type' => $extension['keyword']
+                ), $entity);
+            }
         }
-        $this->_meta['accept_content'] [] = $params;
     }
 
     protected function getPaginationUrlTemplate()
@@ -752,9 +779,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 }
             }
             if ($target_parent_id && $target_infoblock_id) {
-                $adder_title = fx::alang('Add') . ' ' . $component->getItemName();
                 $ctr->acceptContent(array(
-                    'title'        => $adder_title,
                     'parent_id'    => $target_parent_id,
                     'type'         => $component['keyword'],
                     'infoblock_id' => $target_infoblock_id
