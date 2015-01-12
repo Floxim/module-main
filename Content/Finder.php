@@ -72,12 +72,16 @@ class Finder extends System\Finder
 
         foreach ($data as $item) {
             if (isset($index_by_parent[$item['id']])) {
-                $item[$children_key] = $index_by_parent[$item['id']];
+                if (isset($item[$children_key]) && $item[$children_key] instanceof \Floxim\Floxim\System\Collection) {
+                    $item[$children_key]->concat($index_by_parent[$item['id']]);
+                } else {
+                    $item[$children_key] = $index_by_parent[$item['id']];
+                }
                 $data->findRemove(
                     'id',
                     $index_by_parent[$item['id']]->getValues('id')
                 );
-            } else {
+            } elseif (!isset($item[$children_key])) {
                 $item[$children_key] = null;
             }
         }
