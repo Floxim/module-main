@@ -342,7 +342,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     public function doRecord()
     {
         $page = fx::env('page');
-        return array('item' => $page);
+        $this->assign('item', $page);
+        //return array('item' => $page);
     }
 
     public function doList()
@@ -355,11 +356,14 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $this->_meta['hidden'] = true;
         }
         $this->trigger('items_ready', array('items' => $items));
-        $res = array('items' => $items);
+        //$res = array('items' => $items);
+        $this->assign('items', $items);
         if (($pagination = $this->getPagination())) {
-            $res ['pagination'] = $pagination;
+            //$res ['pagination'] = $pagination;
+            $this->assign('pagination', $pagination);
         }
-        return $res;
+        $this->trigger('result_ready');
+        //return $res;
     }
 
     protected function getFakeItems($count = 3)
@@ -377,7 +381,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     {
         // "fake mode" - preview of newly created infoblock
         if ($this->getParam('is_fake')) {
-            return array('items' => $this->getFakeItems(3));
+            $this->assign('items', $this->getFakeItems(3));
         }
         $this->listen('query_ready', function ($e) {
             $q = $e['query'];
@@ -391,7 +395,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 $q->where('infoblock_id', $infoblock_id);
             }
         });
-        $res = $this->doList();
+        $this->doList();
         if (fx::isAdmin()) {
             
             $component = $this->getComponent();
@@ -408,12 +412,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                     'infoblock_id' => $this->getParam('infoblock_id')
                 ));
             }
-            if (count($res['items']) == 0) {
+            if (!$this->getResult('items')) {
                 $this->_meta['hidden_placeholder'] = 'Infoblock "' . $infoblock['name'] . '" is empty. ' .
                     'You can add ' . $component->getItemName() . ' here';
             }
         }
-        return $res;
     }
 
     public function acceptContent($params, $entity = null)
@@ -600,7 +603,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if (!isset($this->_meta['fields'])) {
             $this->_meta['fields'] = array();
         }
-        $res = $this->doList();
+        $this->doList();
+        
+        $items = $this->getResult('items');
 
         // if we are admin and not viewing the block in preview mode,
         // let's add livesearch field loaded with the selected values
@@ -609,7 +614,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $selected_field['value'] = array();
             // filter result by selected content ids,
             // because some items can be added from inherited controllers (e.g. menu with subsections)
-            $selected_items = $res['items']->find('id', $content_ids);
+            $selected_items = $items->find('id', $content_ids);
             foreach ($selected_items as $selected_item) {
                 $selected_field['value'][] = array(
                     'name' => $selected_item['name'],
@@ -620,13 +625,12 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             unset($selected_field['ajax_preload']);
             $this->_meta['fields'][] = $selected_field;
         }
-        if (count($res['items']) === 0 && fx::isAdmin()) {
+        if (count($items) === 0 && fx::isAdmin()) {
             $component = $this->getComponent();
             $ib = fx::data('infoblock', $this->getParam('infoblock_id'));
             $this->_meta['hidden_placeholder'] = 'Infoblock "' . $ib['name'] . '" is empty. ' .
                 'Select ' . $component->getItemName() . ' to show here';
         }
-        return $res;
     }
 
     public function doListFiltered()
@@ -787,8 +791,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
         });
 
-        $res = $this->doList();
-        return $res;
+        $this->doList();
     }
 
 
@@ -867,13 +870,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $this->_finder = $finder;
         return $finder;
     }
-
-    /*
-    public function getSignature() {
-        return 'component_'.$this->getContentType().".".$this->action;
-    }
-     * 
-     */
 
     protected function getControllerVariants()
     {
@@ -954,7 +950,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 }
             }
         }
-        return array('form' => $form, 'item' => $item);
+        $this->assign('form', $form);
+        $this->assign('item', $item);
     }
     
     public function doFormEdit() 
@@ -979,7 +976,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 $item->save();
             }
         }
-        return array('form' => $form, 'item' => $item);
+        $this->assign('form', $form);
+        $this->assign('item', $item);
     }
     
     public function doLivesearch()
