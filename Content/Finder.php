@@ -268,13 +268,14 @@ class Finder extends System\Finder
     }
 
     /**
-     * Returns the entity installed component_id
+     * Returns the entity
      * @param array $data
      * @return fx_content
      */
     public function entity($data = array())
     {
         $classname = $this->getEntityClassName($data);
+        
         if (isset($data['type'])) {
             $component_id = fx::component($data['type'])->get('id');
         } else {
@@ -451,43 +452,169 @@ class Finder extends System\Finder
         $content->set($props);
         return $content;
     }
-
-    public function createAdderPlaceholder($collection = null)
+    
+    protected static function extractCollectionParams($collection)
     {
         $params = array();
-        foreach ($this->where as $cond) {
-            // original field
-            $field = isset($cond[3]) ? $cond[3] : null;
-            // collection was found by id, adder is impossible
-            if ($field === 'id') {
-                return;
+        if ($collection->finder && $collection->finder instanceof Finder) {
+            foreach ($collection->finder->where() as $cond) {
+                // original field
+                $field = isset($cond[3]) ? $cond[3] : null;
+                // collection was found by id, adder is impossible
+                if ($field === 'id') {
+                    return false;
+                }
+                if (!preg_match("~\.~", $field) && $cond[2] == '=' && is_scalar($cond[1])) {
+                    $params[$field] = $cond[1];
+                }
             }
-            if (!preg_match("~\.~", $field) && $cond[2] == '=' && is_scalar($cond[1])) {
-                $params[$field] = $cond[1];
+            //$params['_component'] = $collection->finder->getComponent();
+            $params['_component'] = $collection->finder->getComponent()->get('keyword');
+        }
+        if ($collection->linker_map) {
+            return false;
+        }
+        foreach ($collection->getFilters() as $coll_filter) {
+            list($filter_field, $filter_value) = $coll_filter;
+            if (is_scalar($filter_value)) {
+                $params[$filter_field] = $filter_value;
             }
         }
-        if ($collection) {
-            // collection has linker map, so it contains final many-many related data, 
-            // and current finder can generate only linkers
-            // @todo invent something to add-in-place many-many items
-            if ($collection->linker_map) {
-                return null;
+        return  $params;
+    }
+
+    public function createAdderPlaceholder($collection)
+    {
+        $params = array();
+        if ($this->limit && $this->limit['count'] == 1) {
+            return;
+        }
+        
+        // collection has linker map, so it contains final many-many related data, 
+        // and current finder can generate only linkers
+        // @todo invent something to add-in-place many-many items
+        if ($collection->linker_map) {
+            return null;
+        }
+        
+        $params = self::extractCollectionParams($collection);
+        
+        if (!$params) {
+            return;
+        }
+        
+        $param_variants = array();
+        if (isset($params['parent_id']) && !isset($params['infoblock_id'])) {
+            $avail_infoblocks = fx::data('infoblock')->whereContent($params['_component']);
+            if (isset($params['parent_id'])) {
+                $avail_infoblocks = $avail_infoblocks->getForPage($params['parent_id']);
+            } else {
+                $avail_infoblocks = $avail_infoblocks->all();
             }
-            foreach ($collection->getFilters() as $coll_filter) {
-                list($filter_field, $filter_value) = $coll_filter;
-                if (is_scalar($filter_value)) {
-                    $params[$filter_field] = $filter_value;
+            if (count($avail_infoblocks)) {
+                foreach ($avail_infoblocks as $c_ib) {
+                    $param_variants []= array_merge(
+                        $params,
+                        array(
+                            'infoblock_id' => $c_ib['id'],
+                            '_component' => $c_ib['controller']
+                        )
+                    );
+                }
+            } else {
+                $param_variants []= $params;
+            }
+        } else {
+            $param_variants[]= $params;
+        }
+        
+        
+        foreach ($collection->getConcated() as $concated_coll) {
+            if (!$concated_coll->finder) {
+                continue;
+            }
+            $concated_params = self::extractCollectionParams($concated_coll);
+            if (!$concated_params || count($concated_params) === 0) {
+                continue;
+            }
+            if (!isset($concated_params['parent_id']) && isset($params['parent_id'])) {
+                $concated_params['parent_id'] = $params['parent_id'];
+            }
+            $param_variants []= $concated_params;
+        }
+        
+        $placeholder_variants = array();
+        
+        foreach ($param_variants as $c_params) {
+            $com = fx::component($c_params['_component']);
+            
+            if (isset($c_params['infoblock_id']) && isset($c_params['parent_id'])) {
+                $c_ib = fx::data('infoblock', $c_params['infoblock_id']);
+                $c_parent = fx::data('page', $c_params['parent_id']);
+                $c_ib_avail = $c_ib && $c_parent && $c_ib->isAvailableOnPage($c_parent);
+                
+                //fx::log('aval', $c_ib['name'], $c_parent['name'], $c_ib_avail);
+                if (!$c_ib_avail) {
+                    continue;
+                }
+            }
+            
+            $com_types = $com->getAllVariants();
+            foreach ($com_types as $com_type) {
+                $com_key = $com_type['keyword'];
+                if (!isset($placeholder_variants[$com_key])) {
+                    $placeholder = fx::data($com_key)->create($c_params);
+                    $placeholder['_meta'] = array(
+                        'placeholder' => $c_params + array('type' => $com_key),
+                        'placeholder_name' => $com_type->getItemName()
+                    );
+                    $placeholder->isAdderPlaceholder(true);
+                    $collection[] = $placeholder;
+                    $placeholder_variants[$com_key] = $placeholder;
                 }
             }
         }
-        $placeholder = $this->create($params);
-        $placeholder->digSet('_meta.placeholder', $params + array('type' => $placeholder['type']));
-        $placeholder->digSet('_meta.placeholder_name', $placeholder->getComponent()->getItemName());
-        $placeholder->isAdderPlaceholder(true);
-        // guess item's position here
-        if ($collection) {
+        return;
+        
+        $com = $this->getComponent();
+        
+        if (!isset($params['infoblock_id'])) {
+            $avail_infoblocks = fx::data('infoblock')->whereContent($com['keyword']);
+            if (isset($params['parent_id'])) {
+                $avail_infoblocks = $avail_infoblocks->getForPage($params['parent_id']);
+            } else {
+                $avail_infoblocks = $avail_infoblocks->all();
+            }
+        } else {
+            $avail_infoblocks = fx::collection(fx::data('infoblock', $params['infoblock_id']));
+        }
+        
+        foreach ($avail_infoblocks as $ib ) {
+            $ib_com = fx::component($ib['controller']);
+            $com_variants = $ib_com->getAllVariants();
+            foreach ($com_variants as $com_variant) {
+                if (!isset($placeholder_variants[$com_variant['keyword']])) {
+                    $placeholder_variants[$com_variant['keyword']] = array(
+                        'params' => $params,
+                        'infoblocks' => array()
+                    );
+                }
+                $placeholder_variants[$com_variant['keyword']]['infoblocks'][]= $ib;
+            }
+        }
+        
+        foreach ($placeholder_variants as $type => $var) {
+            $com = fx::component($type);
+            $placeholder = fx::data($type)->create($var['params']);
+            $placeholder_meta = array(
+                'placeholder' => $params + array('type' => $type),
+                'placeholder_name' => $com->getItemName()
+            );
+            $placeholder['_meta'] = $placeholder_meta;
+            $placeholder->isAdderPlaceholder(true);
             $collection[] = $placeholder;
         }
+        
         return $placeholder;
     }
     

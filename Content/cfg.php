@@ -90,7 +90,10 @@ return array(
             'settings' => array(
                 'conditions' => function($ctr) {
                     return $ctr->getConditionsField();
-                }
+                },
+                'sorting' => array(
+                    'values' => array( array('manual', fx::alang('Manual', 'controller_component') ) ) + $sort_fields
+                ),
             )
         ),
         '*list_selected' => array(
@@ -115,7 +118,8 @@ return array(
             ),
             'defaults' => array(
                 '!pagination' => false,
-                '!limit' => 0
+                '!limit' => 0,
+                'parent_type' => 'mount_page_id'
             ),
             'save' => function($ib, $ctr, $params) {
                 // update linkers

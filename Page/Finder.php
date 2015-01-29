@@ -6,6 +6,8 @@ use Floxim\Floxim\System\Fx as fx;
 
 class Finder extends \Floxim\Main\Content\Finder
 {
+    
+    protected static $isStaticCacheUsed = true;
 
     public function getById($id)
     {

@@ -17,11 +17,17 @@ class Controller extends \Floxim\Main\Content\Controller
         if ($this->getParam('sorting') === 'auto' && $item['infoblock_id']) {
             $item_ib_params = fx::data('infoblock', $item['infoblock_id'])->get('params');
             $ib_sorting = $item_ib_params['sorting'];
-            $this->setParam('sorting', $ib_sorting == 'manual' ? 'priority' : $ib_sorting);
+            fx::log('ib sortng', $ib_sorting);
+            $this->setParam('sorting', ($ib_sorting == 'manual' || $ib_sorting == 'auto') ? 'priority' : $ib_sorting);
             $this->setParam('sorting_dir', $item_ib_params['sorting_dir']);
         }
 
         $sort_field = $this->getParam('sorting', 'priority');
+        
+        if ($sort_field === 'auto') {
+            $sort_field = 'priority';
+        }
+        
         $dir = strtolower($this->getParam('sorting_dir', 'asc'));
 
         $where_prev = array(array($sort_field, $item[$sort_field], $dir == 'asc' ? '<' : '>'));
@@ -47,7 +53,8 @@ class Controller extends \Floxim\Main\Content\Controller
             ->where($where_next, null, 'or');
 
         $next = $q_next->all();
-
+        
+        //fx::log($q_prev->showQuery(), $q_next->showQuery());
         return array(
             'prev'    => $prev,
             'current' => $item,

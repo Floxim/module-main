@@ -180,6 +180,12 @@ class Entity extends System\Entity implements Template\Entity
                 $field_meta['values'] = $cf->getSelectValues();
                 $field_meta['value'] = $this[$cf['keyword']];
             }
+            if ($cf->type === 'link') {
+                $field_meta = array_merge(
+                    $field_meta,
+                    $cf->getJsField($this)
+                );
+            }
         }
         return $field_meta;
     }
@@ -332,7 +338,25 @@ class Entity extends System\Entity implements Template\Entity
         if (isset($this['_meta'])) {
             $entity_atts['data-fx_entity_meta'] = $this['_meta'];
         }
+        
+        $forced = $this->getForcedEditableFields();
+        if (is_array($forced) && count($forced)) {
+            foreach ($forced as $field_keyword) {
+                $field_meta = $this->getFieldMeta($field_keyword);
+                if (!is_array($field_meta)) {
+                    fx::log('wrong meta', $field_keyword, $field_meta);
+                    continue;
+                }
+                $field_meta['in_att'] = true;
+                $template_field = new \Floxim\Floxim\Template\Field($this[$field_keyword], $field_meta);
+                $entity_atts['data-fx_force_edit_'.$field_keyword] = $template_field->__toString();
+            }
+        }
         return $entity_atts;
+    }
+    
+    public function getForcedEditableFields() {
+        return array();
     }
 
     public function addTemplateRecordMeta($html, $collection, $index, $is_subroot)
@@ -429,14 +453,6 @@ class Entity extends System\Entity implements Template\Entity
         // 1 2 3 |4| 5 6 7 (8) 9 10
         $old_priority = $this['priority'];
         $this['priority'] = $rel_dir == 'before' ? $rel_priority : $rel_priority + 1;
-        /*
-        fx::debug(
-            'n:'.$this['priority'], 'o:'.$old_priority,
-            $this['name'],
-            $rel_dir, fx::content($rel_item_id)->get('name')
-        );
-         *
-         */
         $q = 'update {{floxim_main_content}} ' .
             'set priority = priority + 1 ' .
             'where parent_id = %d ' .
@@ -449,6 +465,7 @@ class Entity extends System\Entity implements Template\Entity
             $this['priority'],
             $this['id']
         );
+        
         if ($old_priority !== null) {
             $q .= ' and priority < %d';
             $q_params [] = $old_priority;

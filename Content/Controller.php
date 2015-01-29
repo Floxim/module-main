@@ -248,6 +248,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         getComponent()->
             getAllFields()->
             find('type', array(Field\Entity::FIELD_LINK, Field\Entity::FIELD_MULTILINK))->
+            find('keyword', 'parent_id', System\Collection::FILTER_NEQ)->
             find('type_of_edit', Field\Entity::EDIT_NONE, System\Collection::FILTER_NEQ);
         $fields = array();
         foreach ($link_fields as $lf) {
@@ -286,7 +287,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                     'type'   => 'select',
                     'values' => $ib_values,
                     'label'  => fx::alang('Infoblock for the field', 'controller_component')
-                        . ' "' . $lf['description'] . '"'
+                        . ' "' . $lf['name'] . '"'
                 );
             }
             $fields[$c_ib_field['name']] = $c_ib_field;
@@ -352,9 +353,17 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $items = $f->all();
         
         if (count($items) === 0) {
-            $this->_meta['hidden'] = true;
+            //$this->_meta['hidden'] = true;
         }
-        $this->trigger('items_ready', array('items' => $items));
+        
+        //$this->trigger('items_ready', array('items' => $items));
+        
+        $items_event = fx::event('items_ready', array('items' => $items));
+        
+        $this->trigger($items_event);
+        
+        $items = $items_event['items'];
+        
         $res = array('items' => $items);
         if (($pagination = $this->getPagination())) {
             $res ['pagination'] = $pagination;
