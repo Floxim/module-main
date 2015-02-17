@@ -263,10 +263,6 @@ class Entity extends System\Entity implements Template\Entity
             }
         };
         $get_values($parents);
-        if (count($values) === 1) {
-            //fx::debug('only');
-            //return;
-        }
         $value_found = false;
         if ($this['parent_id']) {
             foreach ($values as $v) {
@@ -277,10 +273,8 @@ class Entity extends System\Entity implements Template\Entity
             }
         }
         $jsf = $field ? $field->getJsField($this) : array();
-        if (!$value_found) {
+        if ($this['parent_id'] && !$value_found) {
             return;
-            //$jsf['type'] = 'string';
-            //return $jsf;
         }
         $jsf['values'] = $values;
         $jsf['hidden_on_one_value'] = true;
