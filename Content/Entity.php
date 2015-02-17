@@ -189,6 +189,25 @@ class Entity extends System\Entity implements Template\Entity
         }
         return $field_meta;
     }
+    
+    public function getFormField($field_or_keyword)
+    {
+        if (is_string($field_or_keyword)) {
+            $field = $this->getField($field_or_keyword);
+        } else {
+            $field = $field_or_keyword;
+        }
+        if ($field['type_of_edit'] == Field\Entity::EDIT_NONE) {
+            return;
+        }
+        $field_method = 'getFormField' . fx::util()->underscoreToCamel($field['keyword'], true);
+        if (method_exists($this, $field_method)) {
+            $jsf = call_user_func(array($this, $field_method), $field);
+        } else {
+            $jsf = $field->getJsField($this);
+        }
+        return $jsf;
+    }
 
     public function getFormFields()
     {
@@ -197,29 +216,22 @@ class Entity extends System\Entity implements Template\Entity
         $coms = array();
         $content_com_id = fx::component('content')->get('id');
         foreach ($all_fields as $field) {
-            if ($field['type_of_edit'] == Field\Entity::EDIT_NONE) {
+            $jsf = $this->getFormField($field);
+            if (!$jsf) {
                 continue;
             }
-            $field_method = 'getFormField' . fx::util()->underscoreToCamel($field['keyword'], true);
-            if (method_exists($this, $field_method)) {
-                $jsf = call_user_func(array($this, $field_method), $field);
-            } else {
-                $jsf = $field->getJsField($this);
-            }
-            if ($jsf) {
-                if (!isset($jsf['tab']) || !$jsf['tab']) {
-                    if ($field['form_tab']) {
-                        $jsf['tab'] = $field['form_tab'];
-                    } else {
-                        $coms [$field['component_id']] = true;
-                        $jsf['tab'] = count($coms);
-                        if ($field['component_id'] !== $content_com_id) {
-                            $jsf['tab']--;
-                        }
+            if (!isset($jsf['tab']) || !$jsf['tab']) {
+                if ($field['form_tab']) {
+                    $jsf['tab'] = $field['form_tab'];
+                } else {
+                    $coms [$field['component_id']] = true;
+                    $jsf['tab'] = count($coms);
+                    if ($field['component_id'] !== $content_com_id) {
+                        $jsf['tab']--;
                     }
                 }
-                $form_fields[] = $jsf;
             }
+            $form_fields[] = $jsf;
         }
         $form_fields = fx::collection($form_fields);
         fx::trigger('form_fields_ready', array('entity' => $this, 'fields' => $form_fields));
@@ -315,10 +327,14 @@ class Entity extends System\Entity implements Template\Entity
             $this->getType(false)
         );
         
-        if (is_object($collection) && $collection->linker_map && isset($collection->linker_map[$index])) {
-            $linker = $collection->linker_map[$index];
-            $entity_meta[] = $linker['id'];
-            $entity_meta[] = $linker['type'];
+        $linkers = null;
+        if (is_object($collection) && $collection->linkers) {
+            $linkers = $collection->linkers;
+            if (isset($collection->linkers[$index])) {
+                $linker = $linkers[$index];
+                $entity_meta[] = $linker['id'];
+                $entity_meta[] = $linker['type'];
+            }
         }
         $entity_atts = array(
             'data-fx_entity' => $entity_meta,
@@ -339,24 +355,61 @@ class Entity extends System\Entity implements Template\Entity
             $entity_atts['data-fx_entity_meta'] = $this['_meta'];
         }
         
+        // fields to edit in panel
+        $att_fields = array();
+        
         $forced = $this->getForcedEditableFields();
+        
         if (is_array($forced) && count($forced)) {
             foreach ($forced as $field_keyword) {
                 $field_meta = $this->getFieldMeta($field_keyword);
                 if (!is_array($field_meta)) {
-                    fx::log('wrong meta', $field_keyword, $field_meta);
                     continue;
                 }
-                $field_meta['in_att'] = true;
-                $template_field = new \Floxim\Floxim\Template\Field($this[$field_keyword], $field_meta);
-                $entity_atts['data-fx_force_edit_'.$field_keyword] = $template_field->__toString();
+                $field_meta['current_value'] = $this[$field_keyword];
+                $att_fields []= $field_meta;
             }
         }
+        
+        if ($linkers && $linkers->linkedBy) {
+            $linker_field = $linker->getFieldMeta($linkers->linkedBy);
+            $linker_collection_field = $linkers->selectField;
+            if ($linker_collection_field && $linker_collection_field['params']['content_type']) {
+                $linker_type = $linker_collection_field['params']['content_type'];
+                $linker_field['params']['content_type'] = $linker_type;
+                $linker_field['label'] = fx::alang('Select').' '. mb_strtolower(fx::component($linker_type)->getItemName());
+            }
+            $linker_field['params']['skip_ids'] = array();
+            foreach ($collection->getValues('id') as $col_id) {
+                if ($col_id !== $this['id']) {
+                    $linker_field['params']['skip_ids'][]= $col_id;
+                }
+            }
+            $linker_field['current_value'] = $linker[ $linkers->linkedBy ];
+            $att_fields []= $linker_field;
+            
+            /*
+            $linker_is_published_field = $linker->getFieldMeta('is_published');
+            $linker_is_published_field['current_value'] = $linker['is_published'];
+            $att_fields []= $linker_is_published_field;
+            */
+            
+        }
+        
+        
+        foreach ($att_fields as $field_meta) {
+            $field_meta['in_att'] = true;
+            $field_keyword = $field_meta['id'].'_'.$field_meta['content_id'];
+            
+            $template_field = new \Floxim\Floxim\Template\Field($field_meta['current_value'], $field_meta);
+            $entity_atts['data-fx_force_edit_'.$field_keyword] = $template_field->__toString();
+        }
+        
         return $entity_atts;
     }
     
     public function getForcedEditableFields() {
-        return array();
+        return array('is_published');
     }
 
     public function addTemplateRecordMeta($html, $collection, $index, $is_subroot)
@@ -367,7 +420,7 @@ class Entity extends System\Entity implements Template\Entity
         }
 
         $entity_atts = $this->getTemplateRecordAtts($collection, $index);
-
+        
         if ($is_subroot) {
             $html = preg_replace_callback(
                 "~^(\s*?)(<[^>]+>)~",
@@ -506,22 +559,22 @@ class Entity extends System\Entity implements Template\Entity
                     });
                     break;
                 case System\Finder::MANY_MANY:
-                    $old_linkers = isset($this->modified_data[$link_field['keyword']]->linker_map) ?
-                        $this->modified_data[$link_field['keyword']]->linker_map :
+                    $old_linkers = isset($this->modified_data[$link_field['keyword']]->linkers) ?
+                        $this->modified_data[$link_field['keyword']]->linkers :
                         new System\Collection();
 
                     // new linkers
                     // must be set
                     // @todo then we will cunning calculation
-                    if (!isset($val->linker_map) || count($val->linker_map) != count($val)) {
+                    if (!isset($val->linkers) || count($val->linkers) != count($val)) {
                         throw new \Exception('Wrong linker map');
                     }
-                    foreach ($val->linker_map as $linker_obj) {
+                    foreach ($val->linkers as $linker_obj) {
                         $linker_obj[$related_field_keyword] = $this['id'];
                         $linker_obj->save();
                     }
 
-                    $old_linkers->findRemove('id', $val->linker_map->getValues('id'));
+                    $old_linkers->findRemove('id', $val->linkers->getValues('id'));
                     $old_linkers->apply(function ($i) {
                         $i->delete();
                     });
@@ -558,6 +611,11 @@ class Entity extends System\Entity implements Template\Entity
     {
         $fields = $this->getFields();
         return isset($fields[$field_keyword]);
+    }
+    
+    public function getField($field_keyword) {
+        $fields = $this->getFields();
+        return isset($fields[$field_keyword]) ? $fields[$field_keyword] : null;
     }
 
     protected function afterDelete()

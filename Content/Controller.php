@@ -102,10 +102,24 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
      */
     protected function getSelectedLinkers()
     {
-        $q = fx::data('linker')->where('infoblock_id', $this->getParam('infoblock_id'))
-            ->order('priority');
+        $q = fx::data('linker')
+                ->where('infoblock_id', $this->getParam('infoblock_id'))
+                ->where('linked_id', 0, '!=');
+        $sorting = $this->getParam('sorting');
+        if ($sorting === 'manual') {
+            $q->order('priority');
+        } else {
+            //$q->order('content.'.$sorting, $this->getParam('sorting_dir'));
+            //$q->join('')
+            $sorter_prop_table = $this->getFinder()->getColTable($sorting);
+            $q->join('{{'.$sorter_prop_table.'}} as sorter_table', 'sorter_table.id = linked_id');
+            $q->order('sorter_table.'.$sorting, $this->getParam('sorting_dir'));
+        }
         if ($this->getParam('parent_type') == 'current_page_id') {
             $q->where('parent_id', fx::env('page_id'));
+        } else {
+            $ib = $this->getInfoblock();
+            $q->where('parent_id', $ib['page_id']);
         }
         return $q->all();
     }
@@ -305,11 +319,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if ($this->getParam('infoblock_id')) {
             return array();
         }
-        $com = $this->getComponent();
-        $lost = fx::content($com['keyword'])
-            ->where('infoblock_id', 0)
-            ->where('site_id', fx::env('site_id'))
-            ->all();
+        $lost = $this->getLostContent();
         if (count($lost) == 0) {
             return array();
         }
@@ -320,20 +330,31 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             )
         );
     }
+    
+    public function getLostContent()
+    {
+        $lost = fx::content($this->getComponent()->get('keyword'))
+            ->where('infoblock_id', 0)
+            ->where('site_id', fx::env('site_id'))
+            ->all();
+        return $lost;
+    }
 
     public function bindLostContent($ib, $params)
     {
         if (!isset($params['params']['bind_lost_content']) || !$params['params']['bind_lost_content']) {
             return;
         }
-        $com = $this->getComponent();
-        $lost = fx::content($com['keyword'])
-            ->where('infoblock_id', 0)
-            ->where('site_id', fx::env('site_id'))
-            ->all();
+        $lost = $this->getLostContent();
+        
         foreach ($lost as $lc) {
             $lc->set('infoblock_id', $ib['id']);
-            if (!$lc['parent_id'] && $ib['page_id']) {
+            if (
+                $ib['page_id'] && (
+                    !$lc['parent_id'] ||
+                    !in_array($ib['page_id'], $lc->getParentIds())
+                )
+            ) {
                 $lc['parent_id'] = $ib['page_id'];
             }
             $lc->save();
@@ -348,12 +369,17 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     public function doList()
     {
-        $f = $this->getFinder();
-        $this->trigger('query_ready', array('query' => $f));
-        $items = $f->all();
+        // e.g. fake items for list
+        $items = $this->getResult('items');
         
-        if (count($items) === 0) {
-            $this->_meta['hidden'] = true;
+        if (!$items) {
+            $f = $this->getFinder();
+            $this->trigger('query_ready', array('query' => $f));
+            $items = $f->all();
+
+            if (count($items) === 0) {
+                $this->_meta['hidden'] = true;
+            }
         }
         
         $items_event = fx::event('items_ready', array('items' => $items));
@@ -384,7 +410,16 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     {
         // "fake mode" - preview of newly created infoblock
         if ($this->getParam('is_fake')) {
-            $this->assign('items', $this->getFakeItems(3));
+            $count = $this->getParam('limit');
+            if (!$count) {
+                $count = 3;
+            }
+            if ($this->getParam('bind_lost_content')) {
+                $items = $this->getLostContent();
+            } else {
+                $items = $this->getFakeItems($count);
+            }
+            $this->assign('items', $items);
         }
         $this->listen('query_ready', function ($e) {
             $q = $e['query'];
@@ -564,10 +599,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $linkers = $this->getSelectedLinkers();
             $content_ids = $linkers->getValues('linked_id');
         }
-
+        
         $this->listen('query_ready', function ($e) use ($content_ids) {
             $e['query']->where('id', $content_ids);
         });
+        
         if ($linkers) {
             $this->listen('items_ready', function ($e) use ($linkers) {
                 $c = $e['items'];
@@ -585,10 +621,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                     });
                     $c->is_sortable = true;
                 }
-                $c->linker_map = array();
-                foreach ($c as $cc) {
-                    $c->linker_map [] = $linkers->findOne('linked_id', $cc['id']);
-                }
+                $c->linkers = $linkers;
             });
         } else {
             $this->listen('items_ready', function ($e) use ($content_ids) {
@@ -627,6 +660,10 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $selected_field['var_type'] = 'ib_param';
             unset($selected_field['ajax_preload']);
             $this->_meta['fields'][] = $selected_field;
+            if ($items->linkers) {
+                $items->linkers->selectField = $selected_field;
+                $items->linkers->linkedBy = 'linked_id';
+            }
         }
         if (count($items) === 0 && fx::isAdmin()) {
             $component = $this->getComponent();
@@ -938,7 +975,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                             fx::http()->refresh();
                             break;
                         case 'new_page':
-                            fx::log('go to nu usr', $item, $item['url']);
                             fx::http()->redirect($item['url']);
                             break;
                         case 'parent_page':

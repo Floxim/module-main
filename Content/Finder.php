@@ -471,7 +471,7 @@ class Finder extends System\Finder
             //$params['_component'] = $collection->finder->getComponent();
             $params['_component'] = $collection->finder->getComponent()->get('keyword');
         }
-        if ($collection->linker_map) {
+        if ($collection->linkers) {
             return false;
         }
         foreach ($collection->getFilters() as $coll_filter) {
@@ -483,8 +483,14 @@ class Finder extends System\Finder
         return  $params;
     }
 
+    /**
+     * 
+     * @param \Floxim\Floxim\System\Collection $collection
+     * @return null
+     */
     public function createAdderPlaceholder($collection)
     {
+        //fx::log('creating adder', $collection, count($collection));
         $params = array();
         if ($this->limit && $this->limit['count'] == 1) {
             return;
@@ -493,8 +499,8 @@ class Finder extends System\Finder
         // collection has linker map, so it contains final many-many related data, 
         // and current finder can generate only linkers
         // @todo invent something to add-in-place many-many items
-        if ($collection->linker_map) {
-            return null;
+        if ($collection->linkers) {
+            return $this->createLinkerAdderPlaceholder($collection);
         }
         
         $params = self::extractCollectionParams($collection);
@@ -553,7 +559,6 @@ class Finder extends System\Finder
                 $c_parent = fx::data('page', $c_params['parent_id']);
                 $c_ib_avail = $c_ib && $c_parent && $c_ib->isAvailableOnPage($c_parent);
                 
-                //fx::log('aval', $c_ib['name'], $c_parent['name'], $c_ib_avail);
                 if (!$c_ib_avail) {
                     continue;
                 }
@@ -574,48 +579,26 @@ class Finder extends System\Finder
                 }
             }
         }
-        return;
-        
-        $com = $this->getComponent();
-        
-        if (!isset($params['infoblock_id'])) {
-            $avail_infoblocks = fx::data('infoblock')->whereContent($com['keyword']);
-            if (isset($params['parent_id'])) {
-                $avail_infoblocks = $avail_infoblocks->getForPage($params['parent_id']);
-            } else {
-                $avail_infoblocks = $avail_infoblocks->all();
-            }
-        } else {
-            $avail_infoblocks = fx::collection(fx::data('infoblock', $params['infoblock_id']));
+    }
+    
+    public function createLinkerAdderPlaceholder($collection)
+    {
+        if (!isset($collection->linkers)) {
+            return;
         }
-        
-        foreach ($avail_infoblocks as $ib ) {
-            $ib_com = fx::component($ib['controller']);
-            $com_variants = $ib_com->getAllVariants();
-            foreach ($com_variants as $com_variant) {
-                if (!isset($placeholder_variants[$com_variant['keyword']])) {
-                    $placeholder_variants[$com_variant['keyword']] = array(
-                        'params' => $params,
-                        'infoblocks' => array()
-                    );
-                }
-                $placeholder_variants[$com_variant['keyword']]['infoblocks'][]= $ib;
-            }
-        }
-        
-        foreach ($placeholder_variants as $type => $var) {
-            $com = fx::component($type);
-            $placeholder = fx::data($type)->create($var['params']);
-            $placeholder_meta = array(
-                'placeholder' => $params + array('type' => $type),
-                'placeholder_name' => $com->getItemName()
-            );
-            $placeholder['_meta'] = $placeholder_meta;
-            $placeholder->isAdderPlaceholder(true);
-            $collection[] = $placeholder;
-        }
-        
-        return $placeholder;
+        $linkers = $collection->linkers;
+        $placeholder = $this->create();
+        $linker_params = self::extractCollectionParams($linkers);
+        $linker_params['type'] = $linker_params['_component'];
+        unset($linker_params['_component']);
+        $placeholder['_meta'] = array(
+            'placeholder' => array('type' => $this->getComponent()->get('keyword')),
+            'placeholder_name' => 'Linker',
+            'placeholder_linker' => $linker_params
+        );
+        $placeholder->isAdderPlaceholder(true);
+        $collection[]= $placeholder;
+        $linkers[]= fx::data('floxim.main.linker')->create();
     }
     
     protected function livesearchApplyTerms($terms)
