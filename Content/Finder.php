@@ -131,11 +131,15 @@ class Finder extends System\Finder
                 $missed_tables [] = $table;
             }
             $base_missed_table = array_shift($missed_tables);
-            $q = "SELECT * FROM `{{" . $base_missed_table . "}}` \n";
+			if (!$base_missed_table) {
+                fx::log('empty base table');
+				continue;
+            }            $q = "SELECT * FROM `{{" . $base_missed_table . "}}` \n";
             foreach ($missed_tables as $mt) {
                 $q .= " INNER JOIN `{{" . $mt . '}}` ON `{{' . $mt . '}}`.id = `{{' . $base_missed_table . "}}`.id\n";
             }
             $q .= "WHERE `{{" . $base_missed_table . "}}`.id IN (" . join(", ", $ids) . ")";
+            
             $extensions = fx::db()->getIndexedResults($q);
 
             foreach ($data as $data_index => $data_item) {

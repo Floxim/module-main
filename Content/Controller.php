@@ -27,10 +27,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $sources = array();
         $sources [] = fx::path('@module/' . fx::getComponentPath('content') . '/cfg.php');
         $com = $this->getComponent();
-        if (!$com instanceof \Floxim\Floxim\Component\Component\Entity) {
-            fx::log('wrong com', $this, debug_backtrace());
-            return array();
-        }
         $chain = $com->getChain();
         foreach ($chain as $com) {
             $com_file = fx::path('@module/' . fx::getComponentPath($com['keyword']) . '/cfg.php');
@@ -913,16 +909,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     protected function getControllerVariants()
     {
-        //$vars = parent::_get_controller_variants();
-        $vars = array();
-        $com = $this->getComponent();
-        $chain = $com->getChain();
-        $chain = $chain->reverse();
-        foreach ($chain as $chain_item) {
-            $vars [] = $chain_item['keyword'];
-        }
-        $vars = array_unique($vars);
-        return $vars;
+        return array_reverse(
+                    $this->getComponent()
+                         ->getChain()
+                         ->getValues('keyword')
+                );
     }
 
     public function getActions()
