@@ -9,6 +9,41 @@ use Floxim\Floxim\System\Fx as fx;
 class Entity extends System\Entity implements Template\Entity
 {
     protected $component_id;
+    
+    protected $isActive;
+
+    public function _getIsActive()
+    {
+        return $this->isActive();
+    }
+
+    public function isActive()
+    {
+        if (isset($this->data['is_active'])) {
+            return $this->data['is_active'];
+        }
+        if ($this->isActive) {
+            return $this->isActive;
+        }
+        $c_page_id = fx::env('page_id');
+        if (!$c_page_id) {
+            return false;
+        }
+        $path = fx::env('page')->getPath()->getValues('id');
+        $path [] = $c_page_id;
+
+        return $this->isActive = in_array($this['id'], $path);
+    }
+
+    public function isCurrent()
+    {
+        return $this['id'] == fx::env('page_id');
+    }
+
+    public function _getIsCurrent()
+    {
+        return $this->isCurrent();
+    }
 
     public function __construct($input = array())
     {
@@ -216,6 +251,9 @@ class Entity extends System\Entity implements Template\Entity
         $coms = array();
         $content_com_id = fx::component('content')->get('id');
         foreach ($all_fields as $field) {
+            if (!$field->checkRights()) {
+                continue;
+            }
             $jsf = $this->getFormField($field);
             if (!$jsf) {
                 continue;
@@ -434,7 +472,9 @@ class Entity extends System\Entity implements Template\Entity
 
     protected function beforeSave()
     {
-
+        if (!$this['id']) {
+            $this->guessParentAndInfoblock();
+        }
         $component = fx::data('component', $this->component_id);
         $link_fields = $component->fields()->find('type', Field\Entity::FIELD_LINK);
         foreach ($link_fields as $lf) {
@@ -470,6 +510,25 @@ class Entity extends System\Entity implements Template\Entity
         }
         $this->handleMove();
         parent::beforeSave();
+    }
+    
+    public function guessParentAndInfoblock()
+    {
+        if (!$this['infoblock_id']) {
+            $avail_infoblocks = fx::data('infoblock')->getForContent($this);
+            if (count($avail_infoblocks) > 0) {
+                $this['infoblock_id'] = $avail_infoblocks->first()->get('id');
+            }
+        }
+        if (!$this['parent_id']) {
+            $finder = $this->getAvailParentsFinder();
+            if ($finder) {
+                $parents = $finder->all();
+                if (count($parents) > 0) {
+                    $this['parent_id'] = $parents->first()->get('id');
+                }
+            }
+        }
     }
 
     public function handleMove()

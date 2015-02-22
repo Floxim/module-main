@@ -6,42 +6,6 @@ use Floxim\Floxim\System\Fx as fx;
 class Entity extends \Floxim\Main\Content\Entity
 {
     
-
-    protected $_active;
-
-    public function _getIsActive()
-    {
-        return $this->isActive();
-    }
-
-    public function isActive()
-    {
-        if (isset($this->data['is_active'])) {
-            return $this->data['is_active'];
-        }
-        if ($this->_active) {
-            return $this->_active;
-        }
-        $c_page_id = fx::env('page_id');
-        if (!$c_page_id) {
-            return false;
-        }
-        $path = fx::env('page')->getPath()->getValues('id');
-        $path [] = $c_page_id;
-
-        return $this->_active = in_array($this['id'], $path);
-    }
-
-    public function isCurrent()
-    {
-        return $this['id'] == fx::env('page_id');
-    }
-
-    public function _getIsCurrent()
-    {
-        return $this->isCurrent();
-    }
-
     protected function beforeSave()
     {
         parent::beforeSave();

@@ -943,9 +943,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     {
         $user = fx::env('user');
         
-        $form  = new \Floxim\Form\Form();
-        
         $item = $this->getFinder()->create();
+        
+        $form  = new \Floxim\Form\Form(array(
+            'id' => 'form_create_'.str_replace(".", '_', $item['type']).'_'.$this->getParam('infoblock_id')
+        ));
         
         $target_infoblock = $this->getParam('target_infoblock');
         $item['infoblock_id'] = $target_infoblock;
@@ -955,11 +957,15 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         }
         $fields = $item->getFormFields();
         $form->addFields($fields);
+        $this->trigger('form_ready', array('form' => $form, 'action' => 'create'));
+        
         if ($form->isSent()) {
             if ($user->can('create', $item)) {
+                $this->trigger('form_sent', array('form' => $form, 'action' => 'create'));
                 $item->loadFromForm($form);
                 if ($item->validateWithForm()) {
                     $item->save();
+                    $this->trigger('form_completed', array('form' => $form, 'action' => 'create', 'entity' => $item));
                     $target_type = $this->getParam('redirect_to');
                     switch ($target_type) {
                         case 'refresh':
@@ -978,6 +984,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                         . $item['component']->getItemName()
                     );
                 }
+            } else {
+                $form->addError('Permission denied');
             }
         }
         $this->assign('form', $form);

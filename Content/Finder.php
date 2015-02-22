@@ -494,7 +494,6 @@ class Finder extends System\Finder
      */
     public function createAdderPlaceholder($collection)
     {
-        //fx::log('creating adder', $collection, count($collection));
         $params = array();
         if ($this->limit && $this->limit['count'] == 1) {
             return;
@@ -538,7 +537,6 @@ class Finder extends System\Finder
             $param_variants[]= $params;
         }
         
-        
         foreach ($collection->getConcated() as $concated_coll) {
             if (!$concated_coll->finder) {
                 continue;
@@ -560,7 +558,7 @@ class Finder extends System\Finder
             
             if (isset($c_params['infoblock_id']) && isset($c_params['parent_id'])) {
                 $c_ib = fx::data('infoblock', $c_params['infoblock_id']);
-                $c_parent = fx::data('page', $c_params['parent_id']);
+                $c_parent = fx::data('content', $c_params['parent_id']);
                 $c_ib_avail = $c_ib && $c_parent && $c_ib->isAvailableOnPage($c_parent);
                 
                 if (!$c_ib_avail) {
