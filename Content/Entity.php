@@ -204,7 +204,7 @@ class Entity extends System\Entity implements Template\Entity
         $field_meta['label'] = $cf && $cf['name'] ? $cf['name'] : $field_keyword;
         if ($cf && $cf->type) {
             if ($cf->type === 'text') {
-                $field_meta['type'] = isset($cf['format']['html']) ? 'html' : 'text';
+                $field_meta['type'] = isset($cf['format']['html']) && $cf['format']['html'] ? 'html' : 'text';
             } else {
                 $field_meta['type'] = $cf->type;
             }
