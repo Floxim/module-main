@@ -674,9 +674,11 @@ class Entity extends System\Entity implements Template\Entity
     protected function afterDelete()
     {
         parent::afterDelete();
-        // delete images when deleting content
-        $image_fields = $this->getFields()->
-        find('type', Field\Entity::FIELD_IMAGE);
+        // delete images and files when deleting content
+        $image_fields = $this->getFields()->find('type', array(
+            Field\Entity::FIELD_IMAGE,
+            Field\Entity::FIELD_FILE
+        ));
         foreach ($image_fields as $f) {
             $c_prop = $this[$f['keyword']];
             if (fx::path()->isFile($c_prop)) {
@@ -703,8 +705,11 @@ class Entity extends System\Entity implements Template\Entity
         parent::afterUpdate();
         // modified image fields
         $image_fields = $this->getFields()->
-        find('keyword', $this->modified)->
-        find('type', Field\Entity::FIELD_IMAGE);
+            find('keyword', $this->modified)->
+            find('type', array(
+                Field\Entity::FIELD_IMAGE,
+                Field\Entity::FIELD_FILE
+            ));
 
         foreach ($image_fields as $img_field) {
             $old_value = $this->modified_data[$img_field['keyword']];
