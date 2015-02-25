@@ -17,7 +17,6 @@ class Controller extends \Floxim\Main\Content\Controller
         if ($this->getParam('sorting') === 'auto' && $item['infoblock_id']) {
             $item_ib_params = fx::data('infoblock', $item['infoblock_id'])->get('params');
             $ib_sorting = $item_ib_params['sorting'];
-            fx::log('ib sortng', $ib_sorting);
             $this->setParam('sorting', ($ib_sorting == 'manual' || $ib_sorting == 'auto') ? 'priority' : $ib_sorting);
             $this->setParam('sorting_dir', $item_ib_params['sorting_dir']);
         }

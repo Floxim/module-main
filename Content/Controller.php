@@ -909,11 +909,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     protected function getControllerVariants()
     {
-        return array_reverse(
+        return //array_reverse(
                     $this->getComponent()
                          ->getChain()
-                         ->getValues('keyword')
-                );
+                         ->getValues('keyword');
+                //);
     }
 
     public function getActions()
