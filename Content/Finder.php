@@ -205,7 +205,19 @@ class Finder extends System\Finder
             );
             $content_by_type = fx::collection($res)->getValues('cnt', 'type');
         }
-        return isset($content_by_type[$this->getComponent()->get('keyword')]);
+        
+        $com = $this->getComponent();
+        if (isset($content_by_type[$com['keyword']])) {
+            return true;
+        }
+        
+        foreach ($com->getAllChildren() as $child) {
+            if (isset($content_by_type[$child['keyword']])) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**

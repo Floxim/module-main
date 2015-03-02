@@ -105,11 +105,12 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if ($sorting === 'manual') {
             $q->order('priority');
         } else {
-            //$q->order('content.'.$sorting, $this->getParam('sorting_dir'));
-            //$q->join('')
+            
             $sorter_prop_table = $this->getFinder()->getColTable($sorting);
-            $q->join('{{'.$sorter_prop_table.'}} as sorter_table', 'sorter_table.id = linked_id');
-            $q->order('sorter_table.'.$sorting, $this->getParam('sorting_dir'));
+            if ($sorter_prop_table) {
+                $q->join('{{'.$sorter_prop_table.'}} as sorter_table', 'sorter_table.id = linked_id');
+                $q->order('sorter_table.'.$sorting, $this->getParam('sorting_dir'));
+            }
         }
         if ($this->getParam('parent_type') == 'current_page_id') {
             $q->where('parent_id', fx::env('page_id'));

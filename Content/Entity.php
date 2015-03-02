@@ -514,16 +514,18 @@ class Entity extends System\Entity implements Template\Entity
     
     public function guessParentAndInfoblock()
     {
-        if (!$this['infoblock_id']) {
+        if ($this['infoblock_id'] === null) {
             $avail_infoblocks = fx::data('infoblock')->getForContent($this);
+            fx::log('avail iblocks', $avail_infoblocks);
             if (count($avail_infoblocks) > 0) {
                 $this['infoblock_id'] = $avail_infoblocks->first()->get('id');
             }
         }
-        if (!$this['parent_id']) {
+        if ($this['parent_id'] === null) {
             $finder = $this->getAvailParentsFinder();
             if ($finder) {
                 $parents = $finder->all();
+                fx::log('avail parents', $parents);
                 if (count($parents) > 0) {
                     $this['parent_id'] = $parents->first()->get('id');
                 }
