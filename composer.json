@@ -1,4 +1,5 @@
 {
   "name" : "floxim/module-main",
-  "description" : "Floxim main module."
+  "description" : "Floxim main module.",
+  "type" : "floxim-module"
 }
