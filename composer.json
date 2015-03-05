@@ -4,7 +4,7 @@
   "type": "floxim-module",
   "license": "MIT",
   "source": {
-    "url": "https://github.com/Floxim/module-main",
+    "url": "https://github.com/Floxim/module-main.git",
     "type": "git",
     "reference": "master"
   }
