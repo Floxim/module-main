@@ -1,7 +1,6 @@
 {
   "name": "floxim/module-main",
   "description": "Floxim main module.",
-  "type": "floxim-module",
   "license": "MIT",
   "source": {
     "url": "https://github.com/Floxim/module-main.git",
