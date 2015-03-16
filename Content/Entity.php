@@ -822,7 +822,7 @@ class Entity extends System\Entity implements Template\Entity
         }
         $path_ids = $this->getParentIds();
         $path_ids [] = $this['id'];
-        $this->path = fx::data('content')->where('id', $path_ids)->all();
+        $this->path = fx::data('content')->where('id', $path_ids)->order('level','asc')->all();
         return $this->path;
     }
     
