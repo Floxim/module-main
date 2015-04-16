@@ -45,16 +45,21 @@ class Entity extends System\Entity implements Template\Entity
         return $this->isCurrent();
     }
 
+    
+    protected $available_offsets_cache = null;
+    
     public function __construct($input = array())
     {
         if ($input['component_id']) {
             $this->component_id = $input['component_id'];
         }
         parent::__construct($input);
+        $this->available_offsets_cache = fx::component($this->component_id)->getAvailableEntityOffsets();
         return $this;
     }
     
     public function getAvailableOffsets() {
+        return $this->available_offsets_cache;
         return $this->getComponent()->getAvailableEntityOffsets();
     }
 
