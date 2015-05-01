@@ -277,7 +277,7 @@ class Entity extends System\Entity implements Template\Entity
             $form_fields[] = $jsf;
         }
         $form_fields = fx::collection($form_fields);
-        fx::trigger('form_fields_ready', array('entity' => $this, 'fields' => $form_fields));
+        //fx::trigger('form_fields_ready', array('entity' => $this, 'fields' => $form_fields));
         return $form_fields;
     }
 
@@ -315,7 +315,7 @@ class Entity extends System\Entity implements Template\Entity
                 }
             }
         }
-        $jsf = $field ? $field->getJsField($this) : array();
+        $jsf = $field ? $field->getJsField($this, false) : array();
         if ($this['parent_id'] && !$value_found) {
             return;
         }
@@ -334,6 +334,8 @@ class Entity extends System\Entity implements Template\Entity
         if (!$ib) {
             return false;
         }
+        
+        fx::log($ib);
 
         $parent_type = $ib['scope']['page_type'];
         if (!$parent_type) {
