@@ -47,6 +47,7 @@ class Entity extends System\Entity implements Template\Entity
 
     
     protected $available_offsets_cache = null;
+    protected $available_offset_keys_cache = null;
     
     public function __construct($input = array())
     {
@@ -61,6 +62,18 @@ class Entity extends System\Entity implements Template\Entity
     public function getAvailableOffsets() {
         return $this->available_offsets_cache;
         return $this->getComponent()->getAvailableEntityOffsets();
+    }
+    
+    public function getAvailableOffsetKeys() {
+        if (is_null($this->available_offset_keys_cache)) {
+            foreach ($this->available_offsets_cache as $k => $v){
+                $this->available_offset_keys_cache[$k] = true;
+            }
+            foreach ($this->data as $k => $v) {
+                $this->available_offset_keys_cache[$k] = true;
+            }
+        }
+        return $this->available_offset_keys_cache;
     }
 
     protected $type = null;

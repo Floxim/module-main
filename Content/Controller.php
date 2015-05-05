@@ -270,7 +270,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                     ? $lf['format']['mm_datatype']
                     : $lf['format']['linking_datatype'];
             }
-            $target_com = fx::data('component', $target_com_id);
+            $target_com = fx::component($target_com_id);
             if (!$target_com) {
                 continue;
             }
@@ -316,24 +316,35 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if ($this->getParam('infoblock_id')) {
             return array();
         }
-        $lost = $this->getLostContent();
-        if (count($lost) == 0) {
+        $count_lost = $this->countLostContent() > 0;
+        if ($count_lost === 0) {
             return array();
         }
         return array(
             'bind_lost_content' => array(
                 'type'  => 'checkbox',
-                'label' => 'Bind lost content (' . count($lost) . ')'
+                'label' => 'Bind lost content (' . $count_lost . ')'
             )
+        );
+    }
+    
+    protected function getLostFinder()
+    {
+        return fx::content($this->getComponent()->get('keyword'))
+                ->where('infoblock_id', 0)
+                ->where('site_id', fx::env('site_id'));
+    }
+    
+    public function countLostContent()
+    {
+        return fx::db()->getVar(
+            $this->getLostFinder()->select('count(*)')->showQuery()
         );
     }
     
     public function getLostContent()
     {
-        $lost = fx::content($this->getComponent()->get('keyword'))
-            ->where('infoblock_id', 0)
-            ->where('site_id', fx::env('site_id'))
-            ->all();
+        $lost = $this->getLostFinder()->all();
         return $lost;
     }
 

@@ -11,6 +11,18 @@ class Finder extends System\Finder
 
     static $rel_time = 0;
     static $stored_relations = array();
+    
+    public static $isStaticCacheUsed = true;
+    
+    public static function isStaticCacheUsed() {
+        return true;
+    }
+    
+    protected static function getStaticCacheKey()
+    {
+        return 'data-meta-content';
+    }
+    
     public function relations()
     {
         $class = get_called_class();
@@ -290,6 +302,12 @@ class Finder extends System\Finder
      */
     public function entity($data = array())
     {
+        if (isset($data['id'])) {
+            $cached = static::getFromStaticCache($data['id']);
+            if ($cached) {
+                return $cached;
+            }
+        }
         $classname = $this->getEntityClassName($data);
         
         if (isset($data['type'])) {
@@ -302,6 +320,7 @@ class Finder extends System\Finder
             'data'         => $data,
             'component_id' => $component_id
         ));
+        $this->addToStaticCache($obj);
         return $obj;
     }
 
