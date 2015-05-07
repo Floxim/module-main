@@ -554,7 +554,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 'url'    =>
                     $page_num == 1 ?
                         $base_url :
-                        sprintf($url_tpl, $page_num)
+                        //sprintf($url_tpl, $page_num)
+                        str_replace("%d", $page_num, $url_tpl)
             );
         }
         $res = array(
