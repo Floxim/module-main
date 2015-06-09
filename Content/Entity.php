@@ -290,7 +290,6 @@ class Entity extends System\Entity implements Template\Entity
             $form_fields[] = $jsf;
         }
         $form_fields = fx::collection($form_fields);
-        //fx::trigger('form_fields_ready', array('entity' => $this, 'fields' => $form_fields));
         return $form_fields;
     }
 
@@ -335,6 +334,7 @@ class Entity extends System\Entity implements Template\Entity
         $jsf['values'] = $values;
         $jsf['hidden_on_one_value'] = true;
         $jsf['tab'] = 1;
+        $jsf['type'] = 'livesearch';
         return $jsf;
     }
 
