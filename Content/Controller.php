@@ -123,7 +123,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     protected function getSelectedValues()
     {
-        $res = $this->getSelectedLinkers()->column('linked_id');
+        $linkers = $this->getSelectedLinkers();
+        $res = $linkers->column('linked_id');
         return $res;
     }
 
@@ -136,7 +137,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             'is_multiple'  => true,
             'ajax_preload' => true,
             'params'       => array(
-                'content_type' => $this->_content_type
+                'content_type' => $this->_content_type,
+                'allow_select_doubles' => $this->getParam('allow_select_doubles')
             ),
             'stored'       => false
         );
@@ -317,7 +319,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             return array();
         }
         $count_lost = $this->countLostContent() > 0;
-        if ($count_lost === 0) {
+        if (!$count_lost) {
             return array();
         }
         return array(
@@ -616,21 +618,12 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if ($linkers) {
             $this->listen('items_ready', function ($e) use ($linkers) {
                 $c = $e['items'];
-                $ctr = $e['controller'];
-                if ($ctr->getParam('sorting') === 'manual') {
-                    $c->sort(function ($a, $b) use ($linkers) {
-                        $a_l = $linkers->findOne('linked_id', $a['id']);
-                        $b_l = $linkers->findOne('linked_id', $b['id']);
-                        if (!$a_l || !$b_l) {
-                            return 0;
-                        }
-                        $a_priority = $linkers->findOne('linked_id', $a['id'])->get('priority');
-                        $b_priority = $linkers->findOne('linked_id', $b['id'])->get('priority');
-                        return $a_priority - $b_priority;
-                    });
-                    $c->is_sortable = true;
+                $real_c = $c->fork();
+                foreach ($linkers as $l) {
+                    $real_c[]= $c->findOne('id', $l['linked_id']);
                 }
-                $c->linkers = $linkers;
+                $real_c->linkers = $linkers;
+                $e['items'] = $real_c;
             });
         } else {
             $this->listen('items_ready', function ($e) use ($content_ids) {
@@ -669,6 +662,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $selected_field['var_type'] = 'ib_param';
             unset($selected_field['ajax_preload']);
             $this->_meta['fields'][] = $selected_field;
+            
+            // allow select the same item several times
+            $selected_field['allow_select_doubles'] = $this->getParam('allow_select_doubles');
             if ($items->linkers) {
                 $items->linkers->selectField = $selected_field;
                 $items->linkers->linkedBy = 'linked_id';
@@ -1058,6 +1054,16 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
         }
         $res = $finder->livesearch($_POST['term'], (isset($_POST['limit']) && $_POST['limit']) ? $_POST['limit'] : 20);
+        if (isset($input['ids'])) {
+            $results = fx::collection($res['results']);
+            $res['results'] = array();
+            foreach ($input['ids'] as $id) {
+                $item = $results->findOne('id', $id);
+                if ($item) {
+                    $res['results'][]= $item;
+                }
+            }
+        }
         fx::complete($res);
     }
 }

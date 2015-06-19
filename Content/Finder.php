@@ -68,8 +68,9 @@ class Finder extends System\Finder
     public function makeTree($data, $children_key = 'children', $extra_root_ids = array())
     {
         $index_by_parent = array();
-
+        
         foreach ($data as $item) {
+            unset($item[$children_key]);
             if (in_array($item['id'], $extra_root_ids)) {
                 continue;
             }
@@ -143,10 +144,11 @@ class Finder extends System\Finder
                 $missed_tables [] = $table;
             }
             $base_missed_table = array_shift($missed_tables);
-			if (!$base_missed_table) {
+            if (!$base_missed_table) {
                 fx::log('empty base table');
-				continue;
-            }            $q = "SELECT * FROM `{{" . $base_missed_table . "}}` \n";
+                continue;
+            }            
+            $q = "SELECT * FROM `{{" . $base_missed_table . "}}` \n";
             foreach ($missed_tables as $mt) {
                 $q .= " INNER JOIN `{{" . $mt . '}}` ON `{{' . $mt . '}}`.id = `{{' . $base_missed_table . "}}`.id\n";
             }
@@ -235,7 +237,7 @@ class Finder extends System\Finder
     /**
      * Create new content entity
      * @param array $data Initial params
-     * @return fx_content New content entity (not saved yet, without ID)
+     * @return New content entity (not saved yet, without ID)
      */
     public function create($data = array())
     {

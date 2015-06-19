@@ -165,8 +165,10 @@ class Entity extends System\Entity implements Template\Entity
             } else {
                 $field->setError();
                 $result['status'] = 'error';
-                $result['text'][] = $field->getError();
-                $result['fields'][] = $field_keyword;
+                $result['errors'][] = array(
+                    'field' => $field_keyword,
+                    'error' => $field->getError()
+                );
             }
         }
         foreach ($val_keys as $payload_key) {
@@ -292,6 +294,73 @@ class Entity extends System\Entity implements Template\Entity
         $form_fields = fx::collection($form_fields);
         return $form_fields;
     }
+    
+    public function getStructureFields()
+    {
+        $ibs = fx::data('infoblock')->where('site_id', $this['site_id'])->whereContent($this['type'], true)->all();
+        $com_id = $this->getComponentId();
+        $res = array(
+            'infoblock_id'  => array(
+                'label' => fx::alang('Infoblock'),
+                'type' => 'select',
+                'values' => array(),
+                'value' => $this['infoblock_id']
+            )
+        );
+        foreach ($ibs as $ib) {
+            $finder = $this->getAvailParentsFinder($ib);
+            if (!$finder) {
+                continue;
+            }
+            $parents = $finder->getTree('nested');
+            $values = $this->treeToParentFieldValues($parents);
+            if (count($values) > 0) {
+                $res['infoblock_id']['values'][]= array(
+                    $ib['id'], $ib['name'] ? $ib['name'] : '#'.$ib['id']
+                );
+                $res['infoblock_'.$ib['id'].'_parent_id'] = array(
+                    'label' => fx::alang('Parent'),
+                    'type' => 'select',
+                    'parent' => array('infoblock_id' => $ib['id']),
+                    'values' => $values,
+                    'value' => $this['parent_id'],
+                    'join_with' => 'infoblock_id',
+                    'join_type' => 'line'
+                );
+            }
+        }
+        foreach ($res as &$var) {
+            $var = array_merge(
+                $var, 
+                array(
+                    'content_id' => $this['id'],
+                    'content_type_id' => $com_id,
+                    'var_type' => 'content'
+                )
+            );
+        }
+        return $res;
+    }
+    
+    protected function treeToParentFieldValues($tree)
+    {
+        $values = array();
+        $c_id = $this['id'];
+        $get_values = function ($level, $level_num = 0) use (&$values, &$get_values, $c_id) {
+            foreach ($level as $page) {
+                if ($page['id'] == $c_id) {
+                    continue;
+                }
+                $name = $page['name'] ? $page['name'] : '#'.$page['id'];
+                $values [] = array($page['id'], str_repeat('- ', $level_num * 2) . $name);
+                if ($page['nested']) {
+                    $get_values($page['nested'], $level_num + 1);
+                }
+            }
+        };
+        $get_values($tree);
+        return $values;
+    }
 
     public function getFormFieldParentId($field = null)
     {
@@ -304,20 +373,7 @@ class Entity extends System\Entity implements Template\Entity
             return;
         }
         $parents = $finder->getTree('nested');
-        $values = array();
-        $c_id = $this['id'];
-        $get_values = function ($level, $level_num = 0) use (&$values, &$get_values, $c_id) {
-            foreach ($level as $page) {
-                if ($page['id'] == $c_id) {
-                    continue;
-                }
-                $values [] = array($page['id'], str_repeat('- ', $level_num * 2) . $page['name']);
-                if ($page['nested']) {
-                    $get_values($page['nested'], $level_num + 1);
-                }
-            }
-        };
-        $get_values($parents);
+        $values = $this->treeToParentFieldValues($parents);
         $value_found = false;
         if ($this['parent_id']) {
             foreach ($values as $v) {
@@ -341,15 +397,19 @@ class Entity extends System\Entity implements Template\Entity
     /**
      * Returns a finder to get "potential" parents for the object
      */
-    public function getAvailParentsFinder()
+    public function getAvailParentsFinder($ib = null)
     {
-        $ib = fx::data('infoblock', $this['infoblock_id']);
         if (!$ib) {
-            return false;
+            if (!$this['infoblock_id']) {
+                return;
+            }
+
+            $ib = fx::data('infoblock', $this['infoblock_id']);
+            if (!$ib) {
+                return;
+            }
         }
         
-        fx::log($ib);
-
         $parent_type = $ib['scope']['page_type'];
         if (!$parent_type) {
             $parent_type = 'page';
@@ -359,8 +419,9 @@ class Entity extends System\Entity implements Template\Entity
             $root_id = fx::data('site', $ib['site_id'])->get('index_page_id');
         }
         $finder = fx::content($parent_type);
-        if ($ib['scope']['pages'] === 'this') {
-            $finder->where('id', $ib['page_id']);
+        
+        if ($ib['scope']['pages'] === 'this' || $ib['params']['parent_type'] === 'mount_page_id') {
+            $finder->where('id', $root_id);
         } else {
             $finder->descendantsOf($root_id, $ib['scope']['pages'] != 'children');
         }
@@ -426,15 +487,18 @@ class Entity extends System\Entity implements Template\Entity
         if ($linkers && $linkers->linkedBy) {
             $linker_field = $linker->getFieldMeta($linkers->linkedBy);
             $linker_collection_field = $linkers->selectField;
+            
             if ($linker_collection_field && $linker_collection_field['params']['content_type']) {
                 $linker_type = $linker_collection_field['params']['content_type'];
                 $linker_field['params']['content_type'] = $linker_type;
                 $linker_field['label'] = fx::alang('Select').' '. mb_strtolower(fx::component($linker_type)->getItemName());
             }
-            $linker_field['params']['skip_ids'] = array();
-            foreach ($collection->getValues('id') as $col_id) {
-                if ($col_id !== $this['id']) {
-                    $linker_field['params']['skip_ids'][]= $col_id;
+            if (!$linker_collection_field || !$linker_collection_field['allow_select_doubles']) {
+                $linker_field['params']['skip_ids'] = array();
+                foreach ($collection->getValues('id') as $col_id) {
+                    if ($col_id !== $this['id']) {
+                        $linker_field['params']['skip_ids'][]= $col_id;
+                    }
                 }
             }
             $linker_field['current_value'] = $linker[ $linkers->linkedBy ];
@@ -448,10 +512,24 @@ class Entity extends System\Entity implements Template\Entity
             
         }
         
+        if (!$this['id'] && (!$this['parent_id'] || !$this['infoblock_id'])) {
+            $att_fields = array_merge(
+                $att_fields,
+                $this->getStructureFields()
+            );
+        }
         
-        foreach ($att_fields as $field_meta) {
+        foreach ($att_fields as $field_key => $field_meta) {
             $field_meta['in_att'] = true;
-            $field_keyword = $field_meta['id'].'_'.$field_meta['content_id'];
+            // real field
+            if (isset($field_meta['id']) && isset($field_meta['content_id'])) {
+                $field_keyword = $field_meta['id'].'_'.$field_meta['content_id'];
+            } 
+            // something else
+            else {
+                $field_keyword = $field_key;
+                $field_meta['id'] = $field_key;
+            }
             
             $template_field = new \Floxim\Floxim\Template\Field($field_meta['current_value'], $field_meta);
             $entity_atts['data-fx_force_edit_'.$field_keyword] = $template_field->__toString();
@@ -492,6 +570,10 @@ class Entity extends System\Entity implements Template\Entity
 
     protected function beforeSave()
     {
+        $new_parent_id = $this->getPayload('infoblock_'.$this['infoblock_id'].'_parent_id');
+        if ($new_parent_id) {
+            $this['parent_id'] = $new_parent_id;
+        }
         if (!$this['id']) {
             $this->guessParentAndInfoblock();
         }

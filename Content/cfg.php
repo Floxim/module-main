@@ -103,6 +103,10 @@ return array(
                 'selected' => function($ctr) {
                     return $ctr->getSelectedField();
                 },
+                'allow_select_doubles' => array(
+                    'type' => 'checkbox',
+                    'label' => fx::alang('Allow doubles', 'controller_component')
+                ),
                 'parent_type' => array(
                     'label' => fx::alang('Bind items to','controller_component'),
                     'type' => 'select',
