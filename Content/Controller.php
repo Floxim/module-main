@@ -948,33 +948,57 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         return fx::collection();
     }
     
+    protected function initDataForm($action)
+    {
+        $id = 'form_'.$action.'_'
+                .str_replace(".", '_', $this->getComponent()->get('keyword'))
+                .'_'
+                .$this->getParam('infoblock_id');
+        $params = array(
+            'id' => $id
+        );
+        if ($this->getParam('ajax') || fx::env('ajax')) {
+            $form = $this->ajaxForm($params);
+        } else {
+            $form = new \Floxim\Form\Form($params);
+        }
+        return $form;
+    }
+    
     public function doFormCreate() 
     {
         $user = fx::env('user');
         
         $item = $this->getFinder()->create();
         
-        $form  = new \Floxim\Form\Form(array(
-            'id' => 'form_create_'.str_replace(".", '_', $item['type']).'_'.$this->getParam('infoblock_id')
-        ));
+        $form = $this->initDataForm('create');
         
         $target_infoblock = $this->getParam('target_infoblock');
         $item['infoblock_id'] = $target_infoblock;
         
+        
         if (!$user->can('see_create_form', $item)) {
             return false;
         }
+        
+        $this->assign('form', $form);
+        $this->assign('item', $item);
+        
         $fields = $item->getFormFields();
         $form->addFields($fields);
         $this->trigger('form_ready', array('form' => $form, 'action' => 'create'));
         
-        if ($form->isSent()) {
+        if ($form->isSent() && !$form->hasErrors()) {
             if ($user->can('create', $item)) {
                 $this->trigger('form_sent', array('form' => $form, 'action' => 'create'));
                 $item->loadFromForm($form);
                 if ($item->validateWithForm()) {
                     $item->save();
                     $this->trigger('form_completed', array('form' => $form, 'action' => 'create', 'entity' => $item));
+                    if (fx::env('ajax')) {
+                        $form->finish();
+                        return;
+                    }
                     $target_type = $this->getParam('redirect_to');
                     switch ($target_type) {
                         case 'refresh':
@@ -997,16 +1021,18 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 $form->addError('Permission denied');
             }
         }
-        $this->assign('form', $form);
-        $this->assign('item', $item);
     }
     
     public function doFormEdit() 
     {
         $user = fx::env('user');
-        $item_id = $this->getParam('item_id');
+        
+        $form = $this->initDataForm('edit');
+        
+        $item_id = $form->storeValue('item_id', $this->getParam('item_id'));
+        
         if ($item_id) {
-            $item = $this->getFinder()->getById($item_id);
+            $item = $this->getFinder()->getById($item_id);    
         } else {
             $item = fx::env('page');
         }
@@ -1014,13 +1040,18 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             return false;
         }
         $fields = $item->getFormFields();
-        $form  = new \Floxim\Form\Form();
+        
+        
         $form->addFields($fields);
-        if ($form->isSent()) {
+        
+        if ($form->isSent() && !$form->hasErrors()) {
             $vals = $form->getValues();
             $item->setFieldValues($vals);
             if ($user->can('edit', $item)) {
-                $item->save();
+                $res = $item->save();
+                if ($res) {
+                    $form->finish();
+                }
             }
         }
         $this->assign('form', $form);
