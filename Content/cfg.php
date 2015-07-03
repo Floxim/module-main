@@ -45,7 +45,7 @@ return array(
                         'asc' => fx::alang('Ascending','controller_component'), 
                         'desc' => fx::alang('Descending','controller_component')
                     ),
-                    'join_with' => 'sorting',
+                    //'join_with' => 'sorting',
                     'parent' => array('sorting' => '!=manual')
                 )
             )
