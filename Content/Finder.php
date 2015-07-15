@@ -187,6 +187,13 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         if ($this->limit && $this->limit['count'] == 1) {
             return;
         }
+        $collection->findRemove(function($e) use ($collection) {
+            if (!$e instanceof Entity) {
+                fx::log('notentity', $e, $collection);
+                return false;
+            }
+            return $e->isAdderPlaceholder();
+        });
         
         // collection has linker map, so it contains final many-many related data, 
         // and current finder can generate only linkers
@@ -196,7 +203,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         }
         
         $params = self::extractCollectionParams($collection);
-        
         
         if (!$params) {
             return;
@@ -316,7 +322,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             $linker_params['_link_field'] = $linkers->linkedBy;
             $placeholder['_meta'] = array(
                 'placeholder' => array('type' => $var_com['keyword']),
-                'placeholder_name' => 'Linker',
+                'placeholder_name' => $var_com->getItemName(),
                 'placeholder_linker' => $linker_params
             );
             $placeholder->isAdderPlaceholder(true);

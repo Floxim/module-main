@@ -54,7 +54,7 @@ return array(
             'disabled' => true
         ),
         '*list_infoblock' => array(
-            'name' => $component['name'],
+            'name' => $component->getItemName('list'),
             // ! APC fatal error occured here sometimes
             'install' => function($ib, $ctr, $params) {
                 $ctr->bindLostContent($ib, $params);

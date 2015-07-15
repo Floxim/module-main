@@ -95,7 +95,6 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         if (count($res['infoblock_id']['values']) === 0) {
             unset($res['infoblock_id']);
         }
-        fx::log('gsf', $this, $res);
         return $res;
     }
     
@@ -190,135 +189,9 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         return (bool) $this['is_published'];
     }
 
-    public function getTemplateRecordAtts($collection, $index)
-    {
-        $entity_meta = array(
-            $this->get('id'),
-            $this->getType(false)
-        );
-        
-        $linkers = null;
-        if (is_object($collection) && $collection->linkers) {
-            $linkers = $collection->linkers;
-            if (isset($collection->linkers[$index])) {
-                $linker = $linkers[$index];
-                $entity_meta[] = $linker['id'];
-                $entity_meta[] = $linker['type'];
-            }
-        }
-        $entity_atts = array(
-            'data-fx_entity' => $entity_meta,
-            'class'          => 'fx_entity' . (is_object($collection) && $collection->is_sortable ? ' fx_sortable' : '')
-        );
-        
-        if (!$this->isVisible()) {
-            $entity_atts['class'] .= ' fx_entity_hidden'.(!$collection || count($collection) === 1 ? '_single' : '');
-        }
-        
-        $com = $this->getComponent();
-        $entity_atts['data-fx_entity_name'] = $com->getItemName();
-
-        if ($this->isAdderPlaceholder()) {
-            $entity_atts['class'] .= ' fx_entity_adder_placeholder';
-        }
-        if (isset($this['_meta'])) {
-            $entity_atts['data-fx_entity_meta'] = $this['_meta'];
-        }
-        
-        // fields to edit in panel
-        $att_fields = array();
-        
-        $forced = $this->getForcedEditableFields();
-        
-        if (is_array($forced) && count($forced)) {
-            foreach ($forced as $field_keyword) {
-                $field_meta = $this->getFieldMeta($field_keyword);
-                if (!is_array($field_meta)) {
-                    continue;
-                }
-                $field_meta['current_value'] = $this[$field_keyword];
-                $att_fields []= $field_meta;
-            }
-        }
-        
-        if ($linkers && $linkers->linkedBy) {
-            $linker_field = $linker->getFieldMeta($linkers->linkedBy);
-            $linker_collection_field = $linkers->selectField;
-            
-            if (!$this->isAdderPlaceholder() && $linker_collection_field && $linker_collection_field['params']['content_type']) {
-                $linker_type = $linker_collection_field['params']['content_type'];
-            } else {
-                $linker_type = $this['type'];
-            }
-            $linker_field['params']['content_type'] = $linker_type;
-            $linker_field['label'] = fx::alang('Select').' '. mb_strtolower(fx::component($linker_type)->getItemName());
-            
-            if (!$linker_collection_field || !$linker_collection_field['allow_select_doubles']) {
-                $linker_field['params']['skip_ids'] = array();
-                foreach ($collection->getValues('id') as $col_id) {
-                    if ($col_id !== $this['id']) {
-                        $linker_field['params']['skip_ids'][]= $col_id;
-                    }
-                }
-            }
-            $linker_field['current_value'] = $linker[ $linkers->linkedBy ];
-            $att_fields []= $linker_field;
-        }
-        
-        if (!$this['id'] && (!$this['parent_id'] || !$this['infoblock_id'])) {
-            $att_fields = array_merge(
-                $att_fields,
-                $this->getStructureFields()
-            );
-        }
-        
-        foreach ($att_fields as $field_key => $field_meta) {
-            $field_meta['in_att'] = true;
-            // real field
-            if (isset($field_meta['id']) && isset($field_meta['content_id'])) {
-                $field_keyword = $field_meta['id'].'_'.$field_meta['content_id'];
-            } 
-            // something else
-            else {
-                $field_keyword = $field_key;
-                $field_meta['id'] = $field_key;
-            }
-            
-            $template_field = new \Floxim\Floxim\Template\Field($field_meta['current_value'], $field_meta);
-            $entity_atts['data-fx_force_edit_'.$field_keyword] = $template_field->__toString();
-        }
-        
-        return $entity_atts;
-    }
     
     public function getForcedEditableFields() {
         return array('is_published');
-    }
-
-    public function addTemplateRecordMeta($html, $collection, $index, $is_subroot)
-    {
-        // do nothing if html is empty
-        if (!trim($html)) {
-            return $html;
-        }
-
-        $entity_atts = $this->getTemplateRecordAtts($collection, $index);
-        
-        if ($is_subroot) {
-            $html = preg_replace_callback(
-                "~^(\s*?)(<[^>]+>)~",
-                function ($matches) use ($entity_atts) {
-                    $tag = Template\HtmlToken::createStandalone($matches[2]);
-                    $tag->addMeta($entity_atts);
-                    return $matches[1] . $tag->serialize();
-                },
-                $html
-            );
-            return $html;
-        }
-        $proc = new Template\Html($html);
-        $html = $proc->addMeta($entity_atts);
-        return $html;
     }
 
     protected function beforeSave()
@@ -540,28 +413,6 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         }
     }
 
-    public function fake()
-    {
-        $fields = $this->getFields();
-        foreach ($fields as $f) {
-            $this[$f['keyword']] = $f->fakeValue();
-        }
-    }
-
-    /**
-     * Check if the entity is adder placeholder or set this property to $switch_to value
-     * @param bool $switch_to set true or false
-     * @return bool
-     */
-    public function isAdderPlaceholder($switch_to = null)
-    {
-        if (func_num_args() == 1) {
-            $this->_is_adder_placeholder = $switch_to;
-        }
-        return isset($this->_is_adder_placeholder) && $this->_is_adder_placeholder;
-
-    }
-    
     protected $parent_ids = null;
     protected $path = null;
 

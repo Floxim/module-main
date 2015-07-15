@@ -619,10 +619,15 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $this->listen('items_ready', function ($e) use ($linkers) {
                 $c = $e['items'];
                 $real_c = $c->fork();
+                $real_linkers = $linkers->fork();
                 foreach ($linkers as $l) {
-                    $real_c[]= $c->findOne('id', $l['linked_id']);
+                    $linked = $c->findOne('id', $l['linked_id']);
+                    if ($linked) {
+                        $real_c[]= $linked;
+                        $real_linkers[]= $l;
+                    }
                 }
-                $real_c->linkers = $linkers;
+                $real_c->linkers = $real_linkers;
                 $e['items'] = $real_c;
             });
         } else {
