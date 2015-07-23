@@ -189,7 +189,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         }
         $collection->findRemove(function($e) use ($collection) {
             if (!$e instanceof Entity) {
-                fx::log('notentity', $e, $collection);
                 return false;
             }
             return $e->isAdderPlaceholder();
@@ -283,6 +282,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             }
         }
     }
+    
     protected static function placeholderHasAvailInfoblock($placeholder)
     {
         $structure_fields = $placeholder->getStructureFields();
@@ -304,6 +304,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         if (!isset($collection->linkers)) {
             return;
         }
+        
         $linkers = $collection->linkers;
         
         $variants = $this->getComponent()->getAllVariants();
