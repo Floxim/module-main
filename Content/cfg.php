@@ -2,14 +2,35 @@
 
 use Floxim\Floxim\System\Fx as fx;
 
-$sort_fields = $this
-            ->getComponent()
-            ->getAllFields()
-            ->find('type', \Floxim\Floxim\Component\Field\Entity::FIELD_MULTILINK, '!=')
-            ->find('type', \Floxim\Floxim\Component\Field\Entity::FIELD_MULTILINK, '!=')
-            ->getValues(fx::isAdmin() ? 'name' : 'id', 'keyword');
-
 $component = $this->getComponent();
+
+$sort_fields = $component
+                    ->getAllFields()
+                    ->find(function($f) {
+                        if (
+                            $f instanceof \Floxim\Floxim\Field\Link 
+                            || $f instanceof \Floxim\Floxim\Field\MultiLink
+                            || $f instanceof \Floxim\Floxim\Field\Text
+                            || $f instanceof \Floxim\Floxim\Field\Image
+                            || in_array(
+                                    $f['keyword'], 
+                                array(
+                                    'priority',
+                                    'is_published',
+                                    'is_branch_published', 
+                                    'type',
+                                    'url',
+                                    'h1',
+                                    'title'
+                                )
+                            )
+                        ) {
+                            return false;
+                        }
+                        return true;
+                    })
+                    ->getValues(fx::isAdmin() ? 'name' : 'id', 'keyword');
+
 $content_exists = fx::content($component['keyword'])->contentExists();
 $is_new_infoblock = !$this->getParam('infoblock_id');
 
@@ -17,9 +38,12 @@ $component_infoblocks = fx::data('infoblock')->getContentInfoblocks($component['
 
 return array(
     'actions' => array(
+        /*
         '*.*' => array(
             'icon' => self::getAbbr($component['name'])
         ),
+         * 
+         */
         '*list*' => array(
             'settings' => array(
                 'limit' => array(
@@ -28,7 +52,8 @@ return array(
                 ),
                 'pagination' => array(
                     'label' => fx::alang('Paginate?','controller_component'),
-                    'type' => 'checkbox',
+                    //'type' => 'checkbox',
+                    'type' => 'hidden',
                     'parent' => array('limit' => '!=')
                 ),
                 'sorting' => array(
@@ -54,7 +79,7 @@ return array(
             'disabled' => true
         ),
         '*list_infoblock' => array(
-            'name' => $component->getItemName('list'),
+            'name' => fx::alang('New block with %s', 'controller_component', $component->getItemName('with')),
             // ! APC fatal error occured here sometimes
             'install' => function($ib, $ctr, $params) {
                 $ctr->bindLostContent($ib, $params);
@@ -84,7 +109,8 @@ return array(
             )
         ),
         '*list_filtered' => array(
-            'name' => $component['name'].' '.fx::alang('by filter', 'controller_component'),
+            //'name' => $component['name'].' '.fx::alang('by filter', 'controller_component'),
+            'name' => fx::util()->ucfirst(fx::alang('%s by filter', 'controller_component', $component->getItemName('list'))),
             'icon_extra' => 'fil',
             //'settings' => fx::is_admin() ? $this->_config_conditions() : array()
             'settings' => array(
@@ -97,7 +123,10 @@ return array(
             )
         ),
         '*list_selected' => array(
-            'name' => $component['name'].' selected',
+            //'name' => $component['name'].' selected',
+            'name' => fx::util()->ucfirst(
+                fx::alang('%s selected', 'controller_component', $component->getItemName('list'))
+            ),
             'icon_extra' => 'sel',
             'settings' => array(
                 'selected' => function($ctr) {
@@ -123,6 +152,7 @@ return array(
             'defaults' => array(
                 '!pagination' => false,
                 '!limit' => 0,
+                '!allow_select_doubles' => true,
                 'parent_type' => 'mount_page_id'
             ),
             'save' => function($ib, $ctr, $params) {

@@ -19,6 +19,7 @@ $page_config = array(
                 $res = $page['type'] === $component['keyword'];
                 return $res;
             },
+            'name' => fx::alang('Neighbour %s', 'controller_component', $component->getItemName('list')),
             'settings' => array(
                 'sorting' => array(
                     'name' => 'sorting',

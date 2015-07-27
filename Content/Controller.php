@@ -337,11 +337,30 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 ->where('site_id', fx::env('site_id'));
     }
     
+    static $lost_content_stats = null;
+    
     public function countLostContent()
     {
+        if (is_null(self::$lost_content_stats)) {
+            self::$lost_content_stats = array();
+            $lost = fx::db()->getResults(
+                    'select count(*) as cnt, `type` 
+                from {{floxim_main_content}} 
+                where infoblock_id != "0" and site_id = '.fx::env('site_id').' 
+                group by type'
+            );
+            foreach ($lost as $entry) {
+                self::$lost_content_stats[$entry['type'] = $entry['cnt']];
+            }
+        }
+        $c_type = $this->getComponent()->get('keyword');
+        return isset(self::$lost_content_stats[$c_type]) ? self::$lost_content_stats[$c_type] : 0;
+        /*
         return fx::db()->getVar(
             $this->getLostFinder()->select('count(*)')->showQuery()
         );
+         * 
+         */
     }
     
     public function getLostContent()
@@ -1082,7 +1101,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         }
         if (isset($input['conditions'])) {
             foreach ($input['conditions'] as $cond_field => $cond_val) {
-                if (is_array($cond_val)) {
+                if (is_numeric($cond_field) && is_array($cond_val)) {
+                    $finder->where($cond_val[0], $cond_val[1], isset($cond_val[3]) ? $cond_val[3] : '=');
+                } elseif (is_array($cond_val)) {
                     $finder->where($cond_field, $cond_val[0], $cond_val[1]);
                 } else {
                     $finder->where($cond_field, $cond_val);

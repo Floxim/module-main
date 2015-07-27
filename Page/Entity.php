@@ -201,4 +201,12 @@ class Entity extends \Floxim\Main\Content\Entity
         $this->data['layout_infoblock'] = $lay_ib;
         return $lay_ib;
     }
+    
+    public function isAvailableInSelectedBlock() 
+    {
+        if ($this['type'] === 'floxim.main.page') {
+            return true;
+        }
+        return parent::isAvailableInSelectedBlock();
+    }
 }

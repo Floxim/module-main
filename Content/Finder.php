@@ -175,6 +175,22 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         }
         return  $params;
     }
+    
+    protected function isCollectionInverted($collection)
+    {
+        $f = $collection->finder;
+        if (!$f) {
+            return false;
+        }
+        $order = $f->getOrder();
+        if (!$order || !isset($order[0])) {
+            return false;
+        }
+        if (preg_match("~date.*?\sdesc~i", $order[0])) {
+            return true;
+        }
+        return false;
+    }
 
     /**
      * 
@@ -184,7 +200,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
     public function createAdderPlaceholder($collection)
     {
         $params = array();
-        if ($this->limit && $this->limit['count'] == 1) {
+        if ($this->limit && $this->limit['count'] == 1 && count($collection) > 0) {
             return;
         }
         $collection->findRemove(function($e) use ($collection) {
@@ -200,6 +216,9 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         if ($collection->linkers) {
             return $this->createLinkerAdderPlaceholder($collection);
         }
+        
+        // OH! My! God!
+        $add_to_top = $this->isCollectionInverted($collection);
         
         $params = self::extractCollectionParams($collection);
         
@@ -263,40 +282,34 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             
             $com_types = $com->getAllVariants();
             foreach ($com_types as $com_type) {
+                // skip abstract components like "publication", "contact" etc.
+                if ($com_type['is_abstract']) {
+                    continue;
+                }
                 $com_key = $com_type['keyword'];
                 if (!isset($placeholder_variants[$com_key])) {
                     $placeholder = fx::data($com_key)->create($c_params);
                     
-                    if (!self::placeholderHasAvailInfoblock($placeholder)) {
+                    if (!$placeholder->hasAvailableInfoblock()) {
                         continue;
                     }
                     
-                    $placeholder['_meta'] = array(
+                    $placeholder_meta = array(
                         'placeholder' => $c_params + array('type' => $com_key),
                         'placeholder_name' => $com_type->getItemName()
                     );
+                    if ($add_to_top) {
+                        $placeholder_meta['add_to_top'] = true;
+                    }
+                    
+                    $placeholder['_meta'] = $placeholder_meta;
+                    
                     $placeholder->isAdderPlaceholder(true);
                     $collection[] = $placeholder;
                     $placeholder_variants[$com_key] = $placeholder;
                 }
             }
         }
-    }
-    
-    protected static function placeholderHasAvailInfoblock($placeholder)
-    {
-        $structure_fields = $placeholder->getStructureFields();
-                    
-        if (
-            (
-                !isset($structure_fields['infoblock_id']) || 
-                count($structure_fields['infoblock_id']['values']) === 0
-            ) 
-            && !$placeholder->canHaveNoInfoblock()
-        ) {
-            return false;
-        }
-        return true;
     }
     
     public function createLinkerAdderPlaceholder($collection)
@@ -309,15 +322,21 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         
         $variants = $this->getComponent()->getAllVariants();
         
+        $common_params = self::extractCollectionParams($linkers);
+        
         foreach ($variants as $var_com) {
+            if ($var_com['is_abstract']) {
+                continue;
+            }
             $com_finder = fx::data($var_com['keyword']);
             $placeholder = $com_finder->create();
             
-            if (!self::placeholderHasAvailInfoblock($placeholder)) {
+            // skip components like floxim.nav.external_link
+            if (!$placeholder->isAvailableInSelectedBlock()) {
                 continue;
             }
             
-            $linker_params = self::extractCollectionParams($linkers);
+            $linker_params = $common_params;
             $linker_params['type'] = $linker_params['_component'];
             unset($linker_params['_component']);
             $linker_params['_link_field'] = $linkers->linkedBy;
