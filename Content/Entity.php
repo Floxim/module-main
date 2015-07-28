@@ -175,8 +175,14 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             $root_id = fx::data('site', $ib['site_id'])->get('index_page_id');
         }
         $finder = fx::content($parent_type);
-        
-        if ($ib['scope']['pages'] === 'this' || $ib['params']['parent_type'] === 'mount_page_id') {
+        if (isset($ib['params']['parent_type'])) {
+            $parent_type = $ib['params']['parent_type'];
+        } else {
+            // load forced param from controller config
+            $ctr = $ib->initController();
+            $parent_type = $ctr->getParam('parent_type');
+        }
+        if ($ib['scope']['pages'] === 'this' || $parent_type === 'mount_page_id') {
             $finder->where('id', $root_id);
         } else {
             $finder->descendantsOf($root_id, $ib['scope']['pages'] != 'children');
