@@ -685,7 +685,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
             $selected_field['var_type'] = 'ib_param';
             unset($selected_field['ajax_preload']);
-            $this->_meta['fields'][] = $selected_field;
+            //$this->_meta['fields'][] = $selected_field;
             
             // allow select the same item several times
             $selected_field['allow_select_doubles'] = $this->getParam('allow_select_doubles');

@@ -49,15 +49,20 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
     {
         $ibs = fx::data('infoblock')->where('site_id', $this['site_id'])->whereContent($this['type'], true)->all();
         $com_id = $this->getComponentId();
-        $res = array(
-            'infoblock_id'  => array(
-                'label' => fx::alang('Infoblock'),
-                'type' => 'select',
-                'values' => array(),
-                'value' => $this['infoblock_id'],
-                'hidden_on_one_value' => true
-            )
+        $ib_field = array(
+            'label' => fx::alang('Infoblock'),
+            'value' => $this['infoblock_id'],
+            'hidden_on_one_value' => true
         );
+        
+        if ($this['id']) {
+            $ib_field['type'] = 'hidden';
+        } else {
+            $ib_field['type'] = 'select';
+            $ib_field['values'] = array();
+        }
+        
+        $res = array('infoblock_id'  => $ib_field);
         foreach ($ibs as $ib) {
             $finder = $this->getAvailParentsFinder($ib);
             if (!$finder) {
@@ -71,9 +76,9 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
                 );
                 $parent_field_name = 'infoblock_'.$ib['id'].'_parent_id';
                 $res[$parent_field_name] = array(
-                    'label' => fx::alang('Parent'),
+                    'label' => fx::alang('Section'),
                     'type' => 'select',
-                    'parent' => array('infoblock_id' => $ib['id']),
+                    //'parent' => array('infoblock_id' => $ib['id']),
                     'values' => $values,
                     'value' => $this['parent_id'] ? $this['parent_id'] : $this->getPayload($parent_field_name),
                     'join_with' => 'infoblock_id',
