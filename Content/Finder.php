@@ -186,7 +186,12 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         if (!$order || !isset($order[0])) {
             return false;
         }
-        if (preg_match("~date.*?\sdesc~i", $order[0])) {
+        $order = $order[0];
+        if (!preg_match("~desc$~i", $order)) {
+            return false;
+        }
+        $keywords = 'date|created';
+        if (preg_match("~`".$keywords."~i", $order) || preg_match("~".$keywords."`~i", $order)) {
             return true;
         }
         return false;

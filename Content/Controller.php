@@ -612,6 +612,21 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         }
         return $parent_id;
     }
+    
+    protected function getCommonInfoblockPage($items)
+    {
+        $ib_ids = array_unique($items->getValues('infoblock_id'));
+        
+        if (count($ib_ids) !== 1) {
+            return;
+        }
+        $common_ib = fx::data('infoblock', current($ib_ids));
+        if (!$common_ib || !$common_ib['page_id']) {
+            return;
+        }
+        $common_page = fx::data('page', $common_ib['page_id']);
+        return $common_page;
+    }
 
     public function doListSelected()
     {
@@ -652,14 +667,24 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         } else {
             $this->listen('items_ready', function ($e) use ($content_ids) {
                 $c = $e['items'];
+                $real_c = $c->fork();
+                
                 $ctr = $e['controller'];
                 if ($ctr->getParam('sorting') === 'manual') {
-                    $c->sort(function ($a, $b) use ($content_ids) {
-                        $a_priority = array_search($a['id'], $content_ids);
-                        $b_priority = array_search($b['id'], $content_ids);
-                        return $a_priority - $b_priority;
-                    });
+                    foreach ($content_ids as $c_id) {
+                        $linked = $c->findOne('id', $c_id);
+                        $real_c[]= $linked;
+                    }
+                } else {
+                    $counts = array_count_values($content_ids);
+                    foreach ($c as $linked) {
+                        $c_count = $counts[$linked['id']];
+                        foreach (range(1, $c_count) as $n) {
+                            $real_c[]= $linked;
+                        }
+                    }
                 }
+                $e['items'] = $real_c;
             });
         }
         if (!isset($this->_meta['fields'])) {
@@ -668,6 +693,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $this->doList();
         
         $items = $this->getResult('items');
+        
+        $common_page = $this->getCommonInfoblockPage($items);
+        if ($common_page) {
+            $this->assign('more_url', $common_page['url']);
+        }
 
         // if we are admin and not viewing the block in preview mode,
         // let's add livesearch field loaded with the selected values
@@ -861,6 +891,35 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         });
 
         $this->doList();
+        
+        $conditions = $this->getParam('conditions');
+        
+        $has_parent_cond = false;
+        if (is_array($conditions)) {
+            foreach ($conditions as $cond) {
+                if (
+                    $cond['name'] === 'parent_id' && 
+                    $cond['operator'] === '=' && 
+                    count($cond['value']) === 1
+                ) {
+                    $parent_id = current($cond['value']);
+                    $parent_page = fx::data('page', $parent_id);
+                    if ($parent_page) {
+                        $this->assign('more_url', $parent_page['url']);
+                        $has_parent_cond = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (!$has_parent_cond) {
+            $items = $this->getResult('items');
+            $common_page = $this->getCommonInfoblockPage($items);
+            if ($common_page) {
+                $this->assign('more_url', $common_page['url']);
+            }
+        }
     }
 
 
