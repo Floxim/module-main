@@ -292,6 +292,9 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
                     continue;
                 }
                 $com_key = $com_type['keyword'];
+                if (isset($c_params['type']) && $c_params['type'] !== $com_key) {
+                    continue;
+                }
                 if (!isset($placeholder_variants[$com_key])) {
                     $placeholder = fx::data($com_key)->create($c_params);
                     
@@ -301,7 +304,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
                     
                     $placeholder_meta = array(
                         'placeholder' => $c_params + array('type' => $com_key),
-                        'placeholder_name' => $com_type->getItemName()
+                        'placeholder_name' => $com_type->getItemName('add')
                     );
                     if ($add_to_top) {
                         $placeholder_meta['add_to_top'] = true;
@@ -347,7 +350,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             $linker_params['_link_field'] = $linkers->linkedBy;
             $placeholder['_meta'] = array(
                 'placeholder' => array('type' => $var_com['keyword']),
-                'placeholder_name' => $var_com->getItemName(),
+                'placeholder_name' => $var_com->getItemName('add'),
                 'placeholder_linker' => $linker_params
             );
             $placeholder->isAdderPlaceholder(true);

@@ -1,5 +1,5 @@
-<div class="text_block" fx:template="list" fx:size="high" fx:of="text:list">
-    <div class="text" fx:item>
+<div fx:b="text-list" fx:template="list" fx:of="text:list">
+    <div fx:e="item" fx:item>
          {$text}
     </div>
 </div>
