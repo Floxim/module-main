@@ -140,7 +140,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 'content_type' => $this->_content_type,
                 'allow_select_doubles' => $this->getParam('allow_select_doubles')
             ),
-            'stored'       => false
+            'stored'       => false,
+            'tab' => array(
+                'key' => 'selected',
+                'label' => fx::alang('Selected entries')
+            )
         );
         if ($with_values) {
             $field['value'] = $this->getSelectedValues()->getData();
@@ -150,11 +154,24 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     public function getConditionsField()
     {
+        $num_op = array(
+            '='  => '=',
+            '>'  => '>',
+            '<'  => '<',
+            '>=' => '>=',
+            '<=' => '<=',
+            '!=' => '!=',
+        );
         $res_field = array(
             'name'          => 'conditions',
-            'label'         => fx::alang('Conditions', 'controller_component'),
+            'class_name'         => 'fx_condset',
+            'label'         => '', //fx::alang('Conditions', 'controller_component'),
             'type'          => 'set',
             'is_cond_set'   => true,
+            'tab' => array(
+                'key' => 'conditions',
+                'label' => fx::alang('Conditions', 'controller_component')
+            ),
             'tpl'           => array(
                 array(
                     'id'   => 'name',
@@ -164,19 +181,13 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             ),
             'operators_map' => array(
                 'string'    => array(
-                    'contains'     => 'contains',
+                    'contains'     => fx::alang('Contains'),
+                    'not_contains' => fx::alang('Not contains'),
                     '='            => '=',
-                    'not_contains' => 'not contains',
                     '!='           => '!='
                 ),
-                'int'       => array(
-                    '='  => '=',
-                    '>'  => '>',
-                    '<'  => '<',
-                    '>=' => '>=',
-                    '<=' => '<=',
-                    '!=' => '!=',
-                ),
+                'int'       => $num_op,
+                'float'     => $num_op,
                 'datetime'  => array(
                     '='         => '=',
                     '>'         => '>',
@@ -184,10 +195,10 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                     '>='        => '>=',
                     '<='        => '<=',
                     '!='        => '!=',
-                    'next'      => 'next',
-                    'last'      => 'last',
-                    'in_future' => 'in future',
-                    'in_past'   => 'in past'
+                    'next'      => fx::alang('datecond_next'),
+                    'last'      => fx::alang('datecond_last'),
+                    'in_future' => fx::alang('in future'),
+                    'in_past'   => fx::alang('in past')
                 ),
                 'multilink' => array(
                     '='  => '=',
@@ -203,6 +214,12 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 'Operator',
                 'Value'
             ),
+            'date_intervals' => array(
+                'DAY'   => fx::alang('DAYS'),
+                'WEEK'  => fx::alang('WEEKS'),
+                'MONTH' => fx::alang('MONTHS'),
+                'YEAR'  => fx::alang('YEARS')
+            )
         );
         $com = $this->getComponent();
         $searchable_fields =
@@ -210,6 +227,23 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 ->getAllFields()
                 ->find('type', Field\Entity::FIELD_IMAGE, '!=');
         foreach ($searchable_fields as $field) {
+            
+            if (
+                in_array(
+                    $field['keyword'], 
+                    array(
+                        'priority',
+                        'user_id',
+                        'type',
+                        'is_published',
+                        'is_branch_published',
+                        'children'
+                    )
+                )
+            ) {
+                continue;
+            }
+            
             $res = array(
                 'description' => $field['name'],
                 'type'        => Field\Entity::getTypeById($field['type'])
@@ -230,7 +264,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $res_field['tpl'][0]['values'][$field['keyword']] = $res;
         }
         $ib_field_params = array(
-            'description'  => 'Infoblock',
+            'description'  => fx::alang('Infoblock'),
             'type'         => 'link',
             'content_type' => 'infoblock',
             'conditions'   => array(
@@ -463,6 +497,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
         });
         $this->doList();
+        /*
         if (fx::isAdmin()) {
             
             $component = $this->getComponent();
@@ -470,7 +505,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $infoblock = fx::data('infoblock', $this->getParam('infoblock_id'));
             
             foreach ($component_variants as $component_variant) {
-                $adder_title = fx::alang('Add') . ' ' . $component_variant->getItemName();//.' &rarr; '.$ib_name;
+                $adder_title = fx::alang('Add') . ' ' . $component_variant->getItemName('add');//.' &rarr; '.$ib_name;
 
                 $this->acceptContent(array(
                     'title'        => $adder_title,
@@ -481,9 +516,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
             if (!$this->getResult('items')) {
                 $this->_meta['hidden_placeholder'] = 'Infoblock "' . $infoblock['name'] . '" is empty. ' .
-                    'You can add ' . $component->getItemName() . ' here';
+                    'You can add ' . $component->getItemName('add') . ' here';
             }
         }
+         * 
+         */
     }
 
     public function acceptContent($params, $entity = null)
@@ -497,7 +534,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $component = fx::component($params['type']);
         $has_title = isset($params['title']);
         if (!$has_title) {
-            $params['title'] = fx::alang('Add') . ' ' . $component->getItemName();
+            $params['title'] = fx::alang('Add') . ' ' . $component->getItemName('add');
         }
 
         if (!is_null($entity)) {
@@ -523,7 +560,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if (isset($params['with_extensions']) && $params['with_extensions']) {
             $extensions =  $component->getAllChildren();
             foreach ($extensions as $extension) {
-                $e_name = $extension->getItemName();
+                $e_name = $extension->getItemName('add');
                 $this->acceptContent(array(
                     'title' => $has_title ? $params['title']. ' / '.$e_name : fx::alang('Add'). ' '.$e_name,
                     'type' => $extension['keyword']
@@ -724,12 +761,14 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 $items->linkers->linkedBy = 'linked_id';
             }
         }
+        /*
         if (count($items) === 0 && fx::isAdmin()) {
             $component = $this->getComponent();
             $ib = fx::data('infoblock', $this->getParam('infoblock_id'));
-            $this->_meta['hidden_placeholder'] = 'Infoblock "' . $ib['name'] . '" is empty. ' .
-                'Select ' . $component->getItemName() . ' to show here';
+            //$this->_meta['hidden_placeholder'] = '';
         }
+         * 
+         */
     }
 
     public function doListFiltered()
@@ -739,7 +778,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $ctr = $e['controller'];
             $component = $ctr->getComponent();
             $fields = $component->getAllFields();
-            $conditions = fx::collection($ctr->getParam('conditions'));
+            $conditions = $ctr->getParam('conditions');
+            $conditions = is_array($conditions) ? fx::collection($conditions) : fx::collection();
+            
             if (!$conditions->findOne('name', 'site_id')) {
                 $conditions[] = array(
                     'name'     => 'site_id',
@@ -1096,8 +1137,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                     }
                 } else {
                     $form->addError(
-                        fx::lang('Unable to save ', 'controller_component') 
-                        . $item['component']->getItemName()
+                        fx::alang('Unable to save ', 'controller_component') 
+                        . $item['component']->getItemName('add')
                     );
                 }
             } else {

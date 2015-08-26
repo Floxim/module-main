@@ -55,7 +55,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             'hidden_on_one_value' => true
         );
         
-        if ($this['id']) {
+        if ($this['id'] || $this['infoblock_id']) {
             $ib_field['type'] = 'hidden';
         } else {
             $ib_field['type'] = 'select';
