@@ -203,11 +203,15 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 'multilink' => array(
                     '='  => '=',
                     '!=' => '!=',
+                    'is_current' => fx::alang('Current page'),
+                    'is_not_current' => fx::alang('Not current page')
                 ),
                 'link'      => array(
                     '='  => '=',
                     '!=' => '!=',
-                ),
+                    'is_current' => fx::alang('Current page'),
+                    'is_not_current' => fx::alang('Not current page')
+                )
             ),
             'labels'        => array(
                 'Field',
@@ -841,6 +845,14 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                             $error = true;
                         }
                         break;
+                    case 'is_current':
+                        $condition['value'] = array(fx::env('page_id'));
+                        $condition['operator'] = '=';
+                        break;
+                    case 'is_not_current':
+                        $condition['value'] = array(fx::env('page_id'));
+                        $condition['operator'] = '!=';
+                        break;
                     case 'in_future':
                         $condition['value'] = '> NOW()';
                         $condition['operator'] = 'RAW';
@@ -850,7 +862,11 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                         $condition['operator'] = 'RAW';
                         break;
                 }
+                
+                $is_link_field = false;
+                
                 if ($field['type'] == Field\Entity::FIELD_LINK) {
+                    $is_link_field = true;
                     if (!isset($condition['value'])) {
                         $error = true;
                     } else {
@@ -868,7 +884,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 }
 
                 if ($field['type'] == Field\Entity::FIELD_MULTILINK) {
-
+                    $is_link_field = true;
                     if (!isset($condition['value']) || !is_array($condition['value'])) {
                         $error = true;
                     } else {
@@ -914,20 +930,29 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                         $condition['operator'] = 'IN';
                     }
                 }
+                
                 if (!$error) {
-                    $q->where(
-                        $condition['name'],
-                        $condition['value'],
-                        $condition['operator']
-                    );
+                    if ($is_link_field && $condition['operator'] === 'NOT IN') {
+                        $q->whereOr(
+                            array(
+                                $condition['name'],
+                                $condition['value'],
+                                $condition['operator']
+                            ),
+                            array (
+                                $condition['name'],
+                                false,
+                                'IS NULL'
+                            )
+                        );
+                    } else {
+                        $q->where(
+                            $condition['name'],
+                            $condition['value'],
+                            $condition['operator']
+                        );
+                    }
                 }
-            }
-            if ($target_parent_id && $target_infoblock_id) {
-                $ctr->acceptContent(array(
-                    'parent_id'    => $target_parent_id,
-                    'type'         => $component['keyword'],
-                    'infoblock_id' => $target_infoblock_id
-                ));
             }
         });
 
