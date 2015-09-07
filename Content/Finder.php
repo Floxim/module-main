@@ -226,7 +226,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         $add_to_top = $this->isCollectionInverted($collection);
         
         $params = self::extractCollectionParams($collection);
-        
         if (!$params) {
             return;
         }
@@ -278,7 +277,10 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             if (isset($c_params['infoblock_id']) && isset($c_params['parent_id'])) {
                 $c_ib = fx::data('infoblock', $c_params['infoblock_id']);
                 $c_parent = fx::data('content', $c_params['parent_id']);
-                $c_ib_avail = $c_ib && $c_parent && $c_ib->isAvailableOnPage($c_parent);
+                $c_ib_avail = 
+                        $c_ib && 
+                        $c_parent && 
+                        ($c_ib['params']['is_pass_through'] || $c_ib->isAvailableOnPage($c_parent));
                 
                 if (!$c_ib_avail) {
                     continue;
@@ -297,7 +299,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
                 }
                 if (!isset($placeholder_variants[$com_key])) {
                     $placeholder = fx::data($com_key)->create($c_params);
-                    
                     if (!$placeholder->hasAvailableInfoblock()) {
                         continue;
                     }

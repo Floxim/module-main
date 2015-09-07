@@ -92,13 +92,9 @@ return array(
                 'sorting' => array(
                     'values' => array( array('manual', fx::alang('Manual', 'controller_component') ) ) + $sort_fields
                 ),
-                'parent_type' => array(
-                    'label' => fx::alang('Add items to','controller_component'),
-                    'type' => 'select',
-                    'values' => array(
-                        'current_page_id' => fx::alang('Current page','controller_component'),
-                        'mount_page_id' => fx::alang('Infoblock page','controller_component')
-                    ),
+                'is_pass_through' => array(
+                    'label' => fx::alang('Pass-through data', 'controller_component'),
+                    'type' => 'checkbox',
                     'parent' => array('scope[complex_scope]' => '!~this')
                 )
             ) 
@@ -136,13 +132,9 @@ return array(
                     'type' => 'checkbox',
                     'label' => fx::alang('Allow doubles', 'controller_component')
                 ),
-                'parent_type' => array(
-                    'label' => fx::alang('Bind items to','controller_component'),
-                    'type' => 'select',
-                    'values' => array(
-                        'current_page_id' => fx::alang('Current page','controller_component'),
-                        'mount_page_id' => fx::alang('Infoblock page','controller_component')
-                    ),
+                'is_pass_through' => array(
+                    'label' => fx::alang('Pass-through data','controller_component'),
+                    'type' => 'checkbox',
                     'parent' => array('scope[complex_scope]' => '!~this')
                 ),
                 'sorting' => array(
@@ -153,7 +145,7 @@ return array(
                 '!pagination' => false,
                 '!limit' => 0,
                 '!allow_select_doubles' => true,
-                'parent_type' => 'mount_page_id'
+                'is_pass_through' => 'false'
             ),
             'save' => function($ib, $ctr, $params) {
                 // update linkers

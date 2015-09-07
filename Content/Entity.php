@@ -171,23 +171,25 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             }
         }
         
-        $parent_type = $ib['scope']['page_type'];
-        if (!$parent_type) {
-            $parent_type = 'page';
+        $parent_data_type = $ib['scope']['page_type'];
+        if (!$parent_data_type) {
+            $parent_data_type = 'page';
         }
         $root_id = $ib['page_id'];
         if (!$root_id) {
             $root_id = fx::data('site', $ib['site_id'])->get('index_page_id');
         }
-        $finder = fx::content($parent_type);
-        if (isset($ib['params']['parent_type'])) {
-            $parent_type = $ib['params']['parent_type'];
+        $finder = fx::content($parent_data_type);
+        
+        if (isset($ib['params']['is_pass_through'])) {
+            $is_pass_through = $ib['params']['is_pass_through'];
         } else {
             // load forced param from controller config
             $ctr = $ib->initController();
-            $parent_type = $ctr->getParam('parent_type');
+            $is_pass_through = $ctr->getParam('is_pass_through');
         }
-        if ($ib['scope']['pages'] === 'this' || $parent_type === 'mount_page_id') {
+        
+        if ($ib['scope']['pages'] === 'this' || $is_pass_through) {
             $finder->where('id', $root_id);
         } else {
             $finder->descendantsOf($root_id, $ib['scope']['pages'] != 'children');

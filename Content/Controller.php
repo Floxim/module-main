@@ -10,7 +10,10 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     public function countParentId()
     {
-        if (preg_match("~^listInfoblock~", fx::util()->underscoreToCamel($this->action, false))) {
+        if (
+            preg_match("~^listInfoblock~", fx::util()->underscoreToCamel($this->action, false)) &&
+            !$this->getParam('is_pass_through')
+        ) {
             $this->setParam('parent_id', $this->getParentId());
         }
     }
@@ -68,7 +71,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         }
         if (count($ids) > 0) {
             $ib = fx::data('infoblock', $this->getParam('infoblock_id'));
-            if ($this->getParam('parent_type') == 'current_page_id') {
+            if (!$this->getParam('is_pass_through')) {
                 $parent_id = fx::env('page_id');
             } else {
                 $parent_id = $ib['page_id'];
@@ -112,7 +115,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 $q->order('sorter_table.'.$sorting, $this->getParam('sorting_dir'));
             }
         }
-        if ($this->getParam('parent_type') == 'current_page_id') {
+        if (!$this->getParam('is_pass_through')) {
             $q->where('parent_id', fx::env('page_id'));
         } else {
             $ib = $this->getInfoblock();
@@ -501,30 +504,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
         });
         $this->doList();
-        /*
-        if (fx::isAdmin()) {
-            
-            $component = $this->getComponent();
-            $component_variants = $component->getAllVariants();
-            $infoblock = fx::data('infoblock', $this->getParam('infoblock_id'));
-            
-            foreach ($component_variants as $component_variant) {
-                $adder_title = fx::alang('Add') . ' ' . $component_variant->getItemName('add');//.' &rarr; '.$ib_name;
-
-                $this->acceptContent(array(
-                    'title'        => $adder_title,
-                    'parent_id'    => $this->getParentId(),
-                    'type'         => $component_variant['keyword'],
-                    'infoblock_id' => $this->getParam('infoblock_id')
-                ));
-            }
-            if (!$this->getResult('items')) {
-                $this->_meta['hidden_placeholder'] = 'Infoblock "' . $infoblock['name'] . '" is empty. ' .
-                    'You can add ' . $component->getItemName('add') . ' here';
-            }
-        }
-         * 
-         */
     }
 
     public function acceptContent($params, $entity = null)
@@ -639,17 +618,13 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     {
         $ib = fx::data('infoblock', $this->getParam('infoblock_id'));
         $parent_id = null;
-        switch ($this->getParam('parent_type')) {
-            case 'mount_page_id':
-                $parent_id = $ib['page_id'];
-                if ($parent_id === 0) {
-                    $parent_id = fx::env('site')->get('index_page_id');
-                }
-                break;
-            case 'current_page_id':
-            default:
-                $parent_id = fx::env('page')->get('id');
-                break;
+        if ($this->getParam('is_pass_through')) {
+            $parent_id = $ib['page_id'];
+            if ($parent_id === 0) {
+                $parent_id = fx::env('site')->get('index_page_id');
+            }
+        } else {
+            $parent_id = fx::env('page')->get('id');
         }
         return $parent_id;
     }
