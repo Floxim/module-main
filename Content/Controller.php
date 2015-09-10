@@ -46,10 +46,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         return $name;
     }
     
-    public function getInfoblock() {
-        return fx::data('infoblock', $this->getParam('infoblock_id'));
-    }
-
     public function saveSelectedLinkers($ids)
     {
         if (!is_array($ids)) {
