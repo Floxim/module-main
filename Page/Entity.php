@@ -209,4 +209,32 @@ class Entity extends \Floxim\Main\Content\Entity
         }
         return parent::isAvailableInSelectedBlock();
     }
+    
+    public function getFormFields() 
+    {
+        $fields = parent::getFormFields();
+        $meta_fields = array('title', 'h1', 'url', 'keywords');
+        $first_meta = null;
+        $labels = array();
+        $fields->apply(function(&$f, $f_num) use ($meta_fields, &$first_meta, &$labels) {
+            if (in_array($f['id'], $meta_fields)) {
+                $labels[]= $f['label'];
+                $f['group'] = 'meta';
+                if (is_null($first_meta)) {
+                    $first_meta = $f_num;
+                }
+            }
+        });
+        if (!is_null($first_meta)) {
+            $fields->addBefore($first_meta, array(
+                array(
+                    'type' => 'group',
+                    'keyword' => 'meta',
+                    'label' => fx::alang("Meta fields"),
+                    'description' => '('.join(', ', $labels).')'
+                )
+            ));
+        }
+        return $fields;
+    }
 }

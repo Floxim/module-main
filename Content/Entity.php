@@ -55,15 +55,19 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             'hidden_on_one_value' => true
         );
         
+        $forced_infoblock_id = null;
         if ($this['id'] || $this['infoblock_id']) {
+            $forced_infoblock_id = $this['infoblock_id'];
             $ib_field['type'] = 'hidden';
         } else {
             $ib_field['type'] = 'select';
             $ib_field['values'] = array();
         }
-        
         $res = array('infoblock_id'  => $ib_field);
         foreach ($ibs as $ib) {
+            if (!is_null($forced_infoblock_id) && $forced_infoblock_id !== $ib['id']) {
+                continue;
+            }
             $finder = $this->getAvailParentsFinder($ib);
             if (!$finder) {
                 continue;
@@ -78,23 +82,30 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
                 $res[$parent_field_name] = array(
                     'label' => fx::alang('Section'),
                     'type' => 'select',
-                    //'parent' => array('infoblock_id' => $ib['id']),
                     'values' => $values,
                     'value' => $this['parent_id'] ? $this['parent_id'] : $this->getPayload($parent_field_name),
-                    'join_with' => 'infoblock_id',
-                    'join_type' => 'line',
                     'hidden_on_one_value' => true
                 );
+                if (!$forced_infoblock_id) {
+                    $res[$parent_field_name]['parent'] = array('infoblock_id' => $ib['id']);
+                }
             }
         }
-        foreach ($res as &$var) {
+        
+        $ib_is_visible = $res['infoblock_id']['type'] !== 'hidden' && count($res['infoblock_id']['values']) > 0;
+        
+        foreach ($res as $key => &$var) {
             $var = array_merge(
                 $var, 
                 array(
                     'content_id' => $this['id'],
                     'content_type_id' => $com_id,
                     'var_type' => 'content'
-                )
+                ),
+                $ib_is_visible && $key !== 'infoblock_id' ? array(
+                    'join_with' => 'infoblock_id',
+                    'join_type' => 'line',
+                ) : array()
             );
         }
         if (count($res['infoblock_id']['values']) === 0) {
@@ -150,7 +161,6 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         }
         $jsf['values'] = $values;
         $jsf['hidden_on_one_value'] = true;
-        $jsf['tab'] = 1;
         $jsf['type'] = 'livesearch';
         return $jsf;
     }
