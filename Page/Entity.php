@@ -228,6 +228,7 @@ class Entity extends \Floxim\Main\Content\Entity
         if (!is_null($first_meta)) {
             $fields->addBefore($first_meta, array(
                 array(
+                    'id' => 'meta',
                     'type' => 'group',
                     'keyword' => 'meta',
                     'label' => fx::alang("Meta fields"),
