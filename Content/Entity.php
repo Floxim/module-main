@@ -391,6 +391,13 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             $d->delete();
         }
     }
+    
+    protected function beforeUpdate() {
+        parent::beforeUpdate();
+        if ($this->isModified()) {
+            $this['last_updated'] = fx::date(time());
+        }
+    }
 
     protected function afterUpdate()
     {
