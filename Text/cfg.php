@@ -7,6 +7,12 @@ return array(
                 '!sorting' => 'manual',
                 '!sorting_dir' => 'asc'
             )
-        )
+        ),
+       '*list_selected*' => array(
+           'disabled' => true
+       ),
+       '*list_filtered*' => array(
+           'disabled' => true
+       )
    ) 
 );
