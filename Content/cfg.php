@@ -79,7 +79,8 @@ return array(
             'disabled' => true
         ),
         '*list_infoblock' => array(
-            'name' => fx::alang('New block with %s', 'controller_component', $component->getItemName('with')),
+            //'name' => fx::alang('New block with %s', 'controller_component', $component->getItemName('with')),
+            'name' => fx::util()->ucfirst($component->getItemName('list')),
             // ! APC fatal error occured here sometimes
             'install' => function($ib, $ctr, $params) {
                 $ctr->bindLostContent($ib, $params);

@@ -8,7 +8,7 @@ $record_templates = fx::controller($component['keyword'].':record')
 $page_config = array(
     'actions' => array(
         '*record' => array(
-            'name' => $component['name'].' record',
+            'name' => fx::alang('%s page', 'system', $component->getItemName('of')),
             'check_context' => function($page) use ($component) {
                 $res = $page['type'] === $component['keyword'];
                 return $res;
