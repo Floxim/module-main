@@ -6,9 +6,22 @@ use Floxim\Floxim\System\Fx as fx;
 class Entity extends \Floxim\Main\Content\Entity
 {
     
+    public function isIndexPage()
+    {
+        if (fx::env('site_id') === $this['site_id']) {
+            $site = fx::env('site');
+        } else {
+            $site = fx::data('site')->where('id', $this['site_id'])->one();
+        }
+        return $site && $site['index_page_id'] === $this['id'];
+    }
+    
     protected function beforeSave()
     {
         parent::beforeSave();
+        if ($this->isIndexPage()) {
+            return;
+        }
         if (empty($this['url']) && !empty($this['name'])) {
             $url = fx::util()->strToLatin($this['name']);
             $url = preg_replace("~[^a-z0-9_-]+~i", '-', $url);
@@ -37,6 +50,8 @@ class Entity extends \Floxim\Main\Content\Entity
                     break;
                 }
             }
+            
+            $url = preg_replace("~^/~", '', $url);
 
             $this['url'] = $url;
         }
