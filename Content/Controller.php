@@ -431,6 +431,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     {
         $page = fx::env('page');
         $this->assign('item', $page);
+        $this->trigger('result_ready');
     }
 
     public function doList()

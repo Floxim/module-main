@@ -103,7 +103,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
     protected function getDefaultRelationFinder($rel)
     {
         $finder = parent::getDefaultRelationFinder($rel);
-        if (!$finder instanceof Lang\Finder) {
+        if (!$finder instanceof Lang\Finder && !$finder instanceof \Floxim\Floxim\Component\Infoblock\Finder) {
             $finder->order('priority');
         }
         return $finder;
@@ -146,7 +146,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         return $content;
     }
     
-    protected static function extractCollectionParams($collection)
+    protected static function extractCollectionParams($collection, $skip_linkers = true)
     {
         $params = array();
         if ($collection->finder && $collection->finder instanceof Finder) {
@@ -155,7 +155,10 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
                 $field = isset($cond[3]) ? $cond[3] : null;
                 // collection was found by id, adder is impossible
                 if ($field === 'id') {
-                    return false;
+                    if ($skip_linkers) {
+                        return false;
+                    }
+                    continue;
                 }
                 if (!preg_match("~\.~", $field) && $cond[2] == '=' && is_scalar($cond[1])) {
                     $params[$field] = $cond[1];
@@ -164,7 +167,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             //$params['_component'] = $collection->finder->getComponent();
             $params['_component'] = $collection->finder->getComponent()->get('keyword');
         }
-        if ($collection->linkers) {
+        if ($collection->linkers && $skip_linkers) {
             return false;
         }
         foreach ($collection->getFilters() as $coll_filter) {
@@ -270,7 +273,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         }
         
         $placeholder_variants = array();
-        
         foreach ($param_variants as $c_params) {
             $com = fx::component($c_params['_component']);
             
@@ -290,7 +292,10 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             $com_types = $com->getAllVariants();
             foreach ($com_types as $com_type) {
                 // skip abstract components like "publication", "contact" etc.
-                if ($com_type['is_abstract']) {
+                if (
+                    $com_type['is_abstract'] && 
+                    (!isset($c_params['type']) || ($com_type['keyword'] !== $c_params['type']) )
+                ) {
                     continue;
                 }
                 $com_key = $com_type['keyword'];
@@ -333,10 +338,19 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         
         $common_params = self::extractCollectionParams($linkers);
         
+        
+        $content_params = self::extractCollectionParams($collection, false);
+        //fx::log($common_params, $content_params);
+        $strict_type = isset($content_params['type']) ? $content_params['type'] : null;
+        
         foreach ($variants as $var_com) {
             if ($var_com['is_abstract']) {
                 continue;
             }
+            if ($strict_type && $var_com['keyword'] !== $strict_type) {
+                continue;
+            }
+            
             $com_finder = fx::data($var_com['keyword']);
             $placeholder = $com_finder->create();
             
