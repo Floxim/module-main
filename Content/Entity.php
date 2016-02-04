@@ -47,71 +47,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
     
     public function getStructureFields()
     {
-        $ibs = fx::data('infoblock')->where('site_id', $this['site_id'])->whereContent($this['type'], true)->all();
-        $com_id = $this->getComponentId();
-        $ib_field = array(
-            'label' => fx::alang('Infoblock'),
-            'value' => $this['infoblock_id'],
-            'hidden_on_one_value' => true
-        );
-        
-        $forced_infoblock_id = null;
-        if ($this['id'] || $this['infoblock_id']) {
-            $forced_infoblock_id = $this['infoblock_id'];
-            $ib_field['type'] = 'hidden';
-        } else {
-            $ib_field['type'] = 'select';
-            $ib_field['values'] = array();
-        }
-        $res = array('infoblock_id'  => $ib_field);
-        foreach ($ibs as $ib) {
-            if (!is_null($forced_infoblock_id) && $forced_infoblock_id !== $ib['id']) {
-                continue;
-            }
-            $finder = $this->getAvailParentsFinder($ib);
-            if (!$finder) {
-                continue;
-            }
-            $parents = $finder->getTree('nested');
-            $values = $this->treeToParentFieldValues($parents);
-            if (count($values) > 0) {
-                $res['infoblock_id']['values'][]= array(
-                    $ib['id'], $ib['name'] ? $ib['name'] : '#'.$ib['id']
-                );
-                $parent_field_name = 'infoblock_'.$ib['id'].'_parent_id';
-                $res[$parent_field_name] = array(
-                    'label' => fx::alang('Section'),
-                    'type' => 'select',
-                    'values' => $values,
-                    'value' => $this['parent_id'] ? $this['parent_id'] : $this->getPayload($parent_field_name),
-                    'hidden_on_one_value' => true
-                );
-                if (!$forced_infoblock_id) {
-                    $res[$parent_field_name]['parent'] = array('infoblock_id' => $ib['id']);
-                }
-            }
-        }
-        
-        $ib_is_visible = $res['infoblock_id']['type'] !== 'hidden' && count($res['infoblock_id']['values']) > 0;
-        
-        foreach ($res as $key => &$var) {
-            $var = array_merge(
-                $var, 
-                array(
-                    'content_id' => $this['id'],
-                    'content_type_id' => $com_id,
-                    'var_type' => 'content'
-                ),
-                $ib_is_visible && $key !== 'infoblock_id' ? array(
-                    'join_with' => 'infoblock_id',
-                    'join_type' => 'line',
-                ) : array()
-            );
-        }
-        if (count($res['infoblock_id']['values']) === 0) {
-            unset($res['infoblock_id']);
-        }
-        return $res;
+        return array();
     }
     
     protected function treeToParentFieldValues($tree)
@@ -132,6 +68,16 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         };
         $get_values($tree);
         return $values;
+    }
+    
+    public function getFormFieldInfoblockId($field)
+    {
+        $res = $field->getJsField($this);
+        if ($this['infoblock_id']) {
+            $res['type'] = 'hidden';
+            $res['value'] = $this['infoblock_id'];
+        }
+        return $res;
     }
 
     public function getFormFieldParentId($field = null)
@@ -157,53 +103,79 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         }
         $jsf = $field ? $field->getJsField($this, false) : array();
         if ($this['parent_id'] && !$value_found) {
-            return;
+            //return;
         }
         $jsf['values'] = $values;
         $jsf['hidden_on_one_value'] = true;
-        $jsf['type'] = 'livesearch';
+        //$jsf['type'] = 'livesearch';
         return $jsf;
     }
-
+    
+    public function getRelationFinderParentId()
+    {
+        return $this->getAvailParentsFinder();
+    }
+    
+    public function getRelationFinderInfoblockId()
+    {
+        return fx::data('infoblock')
+                ->where('site_id', $this['site_id'])
+                ->whereContent($this['type'], true);
+    }
+    
+    public function hasAvailableInfoblock() {
+        $ib = $this->getRelationFinderInfoblockId()->one();
+        return $ib;
+    }
+    
     /**
      * Returns a finder to get "potential" parents for the object
      */
-    public function getAvailParentsFinder($ib = null)
+    public function getAvailParentsFinder($ibs = null)
     {
-        if (!$ib) {
-            if (!$this['infoblock_id']) {
-                return;
+        if (!$ibs && $this['infoblock_id']) {
+            $ibs = fx::data('infoblock', $this['infoblock_id']);
+        }
+        
+        if (!$ibs) {
+            $ibs = $this->getRelationFinderInfoblockId()->all();
+        } elseif ( ! ($ibs instanceof \Floxim\Floxim\System\Collection) ) {
+            $ibs = fx::collection($ibs);
+        }
+        
+        $conds = array();
+        $finder = fx::data('floxim.main.page');
+        foreach ($ibs as $ib) {
+            $c_cond = array();
+            
+            $parent_data_type = $ib['scope']['page_type'];
+            if ($parent_data_type) {
+                $c_cond[]= $finder->conditionIs( $parent_data_type );
+            }
+            $root_id = $ib['page_id'];
+            if (!$root_id) {
+                $root_id = fx::data('site', $ib['site_id'])->get('index_page_id');
+            }
+            
+            if (isset($ib['params']['is_pass_through'])) {
+                $is_pass_through = $ib['params']['is_pass_through'];
+            } else {
+                // load forced param from controller config
+                $ctr = $ib->initController();
+                $is_pass_through = $ctr->getParam('is_pass_through');
             }
 
-            $ib = fx::data('infoblock', $this['infoblock_id']);
-            if (!$ib) {
-                return;
+            if ($ib['scope']['pages'] === 'this' || $is_pass_through) {
+                //$finder->where('id', $root_id);
+                $c_cond[]= array('id', $root_id);
+            } else {
+                //$finder->descendantsOf($root_id, $ib['scope']['pages'] != 'children');
+                $c_cond[]= $finder->conditionDescendantsOf($root_id, $ib['scope']['pages'] != 'children');
             }
+            
+            $conds []= array($c_cond, null, 'and');
         }
-        
-        $parent_data_type = $ib['scope']['page_type'];
-        if (!$parent_data_type) {
-            $parent_data_type = 'page';
-        }
-        $root_id = $ib['page_id'];
-        if (!$root_id) {
-            $root_id = fx::data('site', $ib['site_id'])->get('index_page_id');
-        }
-        $finder = fx::content($parent_data_type);
-        
-        if (isset($ib['params']['is_pass_through'])) {
-            $is_pass_through = $ib['params']['is_pass_through'];
-        } else {
-            // load forced param from controller config
-            $ctr = $ib->initController();
-            $is_pass_through = $ctr->getParam('is_pass_through');
-        }
-        
-        if ($ib['scope']['pages'] === 'this' || $is_pass_through) {
-            $finder->where('id', $root_id);
-        } else {
-            $finder->descendantsOf($root_id, $ib['scope']['pages'] != 'children');
-        }
+        $finder->where( array($conds, null, 'or') );
         return $finder;
     }
     
@@ -219,38 +191,6 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
 
     protected function beforeSave()
     {
-        $new_parent_id = $this->getPayload('infoblock_'.$this['infoblock_id'].'_parent_id');
-        if ($new_parent_id) {
-            $this['parent_id'] = $new_parent_id;
-        }
-        $component = fx::data('component', $this->component_id);
-        $link_fields = $component->fields()->find('type', Field\Entity::FIELD_LINK);
-        foreach ($link_fields as $lf) {
-            // save the cases of type $tagpost['tag'] -> $tagpost['most part']
-            $lf_prop = $lf['format']['prop_name'];
-            if (
-                isset($this->data[$lf_prop]) &&
-                $this[$lf_prop] instanceof Entity &&
-                empty($this[$lf['keyword']])
-            ) {
-                if (!$this[$lf_prop]['id']) {
-                    $this[$lf_prop]->save();
-                }
-                $this[$lf['keyword']] = $this[$lf_prop]['id'];
-            }
-            // synchronize the field bound to the parent
-            if ($lf['format']['is_parent']) {
-                $lfv = $this[$lf['keyword']];
-                if ($lfv != $this['parent_id']) {
-                    if (!$this['parent_id'] && $lfv) {
-                        $this['parent_id'] = $lfv;
-                    } elseif ($lfv != $this['parent_id']) {
-                        $this[$lf['keyword']] = $this['parent_id'];
-                    }
-                }
-            }
-        }
-
         if ($this->isModified('parent_id') || ($this['parent_id'] && !$this['materialized_path'])) {
             $new_parent = $this['parent'];
             $this['level'] = $new_parent['level'] + 1;
@@ -310,62 +250,6 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
     }
 
     /*
-     * Store multiple links, linked to the entity
-     */
-    protected function saveMultiLinks()
-    {
-        $link_fields =
-            $this->getFields()->
-            find('keyword', $this->modified)->
-            find('type', Field\Entity::FIELD_MULTILINK);
-        foreach ($link_fields as $link_field) {
-            $val = $this[$link_field['keyword']];
-            $relation = $link_field->getRelation();
-            $related_field_keyword = $relation[2];
-
-            switch ($relation[0]) {
-                case System\Finder::HAS_MANY:
-                    $old_data = isset($this->modified_data[$link_field['keyword']]) ?
-                        $this->modified_data[$link_field['keyword']] :
-                        new System\Collection();
-                    $c_priority = 0;
-                    foreach ($val as $linked_item) {
-                        $c_priority++;
-                        $linked_item[$related_field_keyword] = $this['id'];
-                        $linked_item['priority'] = $c_priority;
-                        $linked_item->save();
-                    }
-                    $old_data->findRemove('id', $val->getValues('id'));
-                    $old_data->apply(function ($i) {
-                        $i->delete();
-                    });
-                    break;
-                case System\Finder::MANY_MANY:
-                    $old_linkers = isset($this->modified_data[$link_field['keyword']]->linkers) ?
-                        $this->modified_data[$link_field['keyword']]->linkers :
-                        new System\Collection();
-
-                    // new linkers
-                    // must be set
-                    // @todo then we will cunning calculation
-                    if (!isset($val->linkers) || count($val->linkers) != count($val)) {
-                        throw new \Exception('Wrong linker map');
-                    }
-                    foreach ($val->linkers as $linker_obj) {
-                        $linker_obj[$related_field_keyword] = $this['id'];
-                        $linker_obj->save();
-                    }
-
-                    $old_linkers->findRemove('id', $val->linkers->getValues('id'));
-                    $old_linkers->apply(function ($i) {
-                        $i->delete();
-                    });
-                    break;
-            }
-        }
-    }
-
-    /*
      * Get the id of the information block where to add the linked objects on the field $link_field
      */
     public function getLinkFieldInfoblock($link_field_id)
@@ -385,7 +269,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
 
     public function deleteChildren()
     {
-        $descendants = fx::data('content')->descendantsOf($this);
+        $descendants = fx::data('floxim.main.content')->descendantsOf($this);
         foreach ($descendants->all() as $d) {
             $d->_skip_cascade_delete_children = true;
             $d->delete();
@@ -414,7 +298,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             $new_publish_status = $this['is_branch_published'];
         }
         if (!is_null($new_publish_status)) {
-            $children = fx::data('content')->where('parent_id', $this['id'])->all();
+            $children = fx::data('floxim.main.content')->where('parent_id', $this['id'])->all();
             foreach ($children as $child) {
                 $child['is_branch_published'] = !$new_publish_status ? 0 : $this['is_published'];
                 $child->save();
@@ -428,7 +312,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             $old_path = $this->modified_data['materialized_path'] . $this['id'] . '.';
             // new path for descendants
             $new_path = $this['materialized_path'] . $this['id'] . '.';
-            $nested_items = fx::data('content')->where('materialized_path', $old_path . '%', 'LIKE')->all();
+            $nested_items = fx::data('floxim.main.content')->where('materialized_path', $old_path . '%', 'LIKE')->all();
             $level_diff = 0;
             if ($this->isModified('level')) {
                 $level_diff = $this['level'] - $this->modified_data['level'];
@@ -471,7 +355,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         $ids = array();
         while ($c_pid != 0) {
             array_unshift($ids, $c_pid);
-            $c_pid = fx::data('page', $ids[0])->get('parent_id');
+            $c_pid = fx::data('floxim.main.page', $ids[0])->get('parent_id');
         }
         $this->parent_ids = $ids;
         return $ids;
@@ -484,7 +368,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         }
         $path_ids = $this->getParentIds();
         $path_ids [] = $this['id'];
-        $this->path = fx::data('content')->where('id', $path_ids)->order('level','asc')->all();
+        $this->path = fx::data('floxim.main.content')->where('id', $path_ids)->order('level','asc')->all();
         return $this->path;
     }
     

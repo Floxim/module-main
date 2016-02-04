@@ -117,6 +117,9 @@ return array(
                 'sorting' => array(
                     'values' => array( array('manual', fx::alang('Manual', 'controller_component') ) ) + $sort_fields
                 ),
+            ),
+            'defaults' => array(
+                'limit' => 10
             )
         ),
         '*list_selected' => array(

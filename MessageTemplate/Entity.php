@@ -10,7 +10,7 @@ class Entity extends \Floxim\Main\Content\Entity
         $com_content_id = fx::component('floxim.main.content')->get('id');
         $res = array();
         foreach ($this->getFields() as $f) {
-            $type = $f->getTypeKeyword();
+            $type = $f['type'];
             
             $field_keyword = $f['keyword'];
             

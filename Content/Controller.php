@@ -28,7 +28,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     protected function getConfigSources()
     {
         $sources = array();
-        $sources [] = fx::path('@module/' . fx::getComponentPath('content') . '/cfg.php');
+        $sources [] = fx::path('@module/' . fx::getComponentPath('floxim.main.content') . '/cfg.php');
         $com = $this->getComponent();
         $chain = $com->getChain();
         foreach ($chain as $com) {
@@ -150,140 +150,30 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         }
         return $field;
     }
-
-    public function getConditionsField()
-    {
-        $num_op = array(
-            '='  => '=',
-            '>'  => '>',
-            '<'  => '<',
-            '>=' => '>=',
-            '<=' => '<=',
-            '!=' => '!=',
+    
+    public function getConditionsField() {
+        $com = $this->getComponent();
+        $cond_fields = array(
+            $com->getFieldForFilter('entity')
         );
-        $res_field = array(
-            'name'          => 'conditions',
-            'class_name'         => 'fx_condset',
-            'label'         => '', //fx::alang('Conditions', 'controller_component'),
-            'type'          => 'set',
-            'is_cond_set'   => true,
+        $context = fx::env()->getFieldsForFilter();
+        
+        foreach ($context as $context_prop) {
+            $cond_fields []= $context_prop;
+        }
+        
+        $field = array(
+            'name' => 'conditions',
+            'type' => 'condition',
+            'context' => $context,
+            'fields' => $cond_fields,
+            'label' => false,
             'tab' => array(
                 'key' => 'conditions',
                 'label' => fx::alang('Conditions', 'controller_component')
-            ),
-            'tpl'           => array(
-                array(
-                    'id'   => 'name',
-                    'name' => 'name',
-                    'type' => 'select'
-                ),
-            ),
-            'operators_map' => array(
-                'string'    => array(
-                    'contains'     => fx::alang('Contains'),
-                    'not_contains' => fx::alang('Not contains'),
-                    '='            => '=',
-                    '!='           => '!='
-                ),
-                'int'       => $num_op,
-                'float'     => $num_op,
-                'datetime'  => array(
-                    '='         => '=',
-                    '>'         => '>',
-                    '<'         => '<',
-                    '>='        => '>=',
-                    '<='        => '<=',
-                    '!='        => '!=',
-                    'next'      => fx::alang('datecond_next'),
-                    'last'      => fx::alang('datecond_last'),
-                    'in_future' => fx::alang('in future'),
-                    'in_past'   => fx::alang('in past')
-                ),
-                'multilink' => array(
-                    '='  => '=',
-                    '!=' => '!=',
-                    'is_current' => fx::alang('Current page'),
-                    'is_not_current' => fx::alang('Not current page')
-                ),
-                'link'      => array(
-                    '='  => '=',
-                    '!=' => '!=',
-                    'is_current' => fx::alang('Current page'),
-                    'is_not_current' => fx::alang('Not current page')
-                )
-            ),
-            'labels'        => array(
-                'Field',
-                'Operator',
-                'Value'
-            ),
-            'date_intervals' => array(
-                'DAY'   => fx::alang('DAYS'),
-                'WEEK'  => fx::alang('WEEKS'),
-                'MONTH' => fx::alang('MONTHS'),
-                'YEAR'  => fx::alang('YEARS')
             )
         );
-        $com = $this->getComponent();
-        $searchable_fields =
-            $com
-                ->getAllFields()
-                ->find('type', Field\Entity::FIELD_IMAGE, '!=');
-        foreach ($searchable_fields as $field) {
-            
-            if (
-                in_array(
-                    $field['keyword'], 
-                    array(
-                        'priority',
-                        'user_id',
-                        'type',
-                        'is_published',
-                        'is_branch_published',
-                        'children'
-                    )
-                )
-            ) {
-                continue;
-            }
-            
-            $res = array(
-                'description' => $field['name'],
-                'type'        => Field\Entity::getTypeById($field['type'])
-            );
-            if ($field['type'] == Field\Entity::FIELD_LINK) {
-                $res['content_type'] = $field->getTargetName();
-            }
-            if ($field['type'] == Field\Entity::FIELD_MULTILINK) {
-                $relation = $field->getRelation();
-                $res['content_type'] = $relation[0] == System\Finder::MANY_MANY ? $relation[4] : $relation[1];
-            }
-            // Add allow values for select parent page
-            if ($field['keyword'] == 'parent_id') {
-                $pages = $this->getAllowParentPages();
-                $values = $pages->getValues(array('id', 'name'));
-                $res['values'] = $values;
-            }
-            $res_field['tpl'][0]['values'][$field['keyword']] = $res;
-        }
-        $ib_field_params = array(
-            'description'  => fx::alang('Infoblock'),
-            'type'         => 'link',
-            'content_type' => 'infoblock',
-            'conditions'   => array(
-                'controller' => array(
-                    $com->getAllVariants()->getValues('keyword'),
-                    'IN'
-                ),
-                'site_id'    => fx::env('site_id'),
-                'action'     => array(array('list_infoblock', 'list_selected'), 'IN')
-            )
-        );
-        if (($cib_id = $this->getParam('infoblock_id'))) {
-            $ib_field_params['conditions']['id'] = array($cib_id, '!=');
-        }
-        $res_field['tpl'][0]['values']['infoblock_id'] = $ib_field_params;
-        return $res_field;
+        return $field;
     }
 
     public function getTargetConfigFields()
@@ -294,15 +184,15 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
          * offers to choose, where to get/where to add value-links
          * you may elect not for incomprehensible Guia
          */
-        $link_fields = $this->
-        getComponent()->
-            getAllFields()->
-            find('type', array(Field\Entity::FIELD_LINK, Field\Entity::FIELD_MULTILINK))->
-            find('keyword', 'parent_id', System\Collection::FILTER_NEQ)->
-            find('type_of_edit', Field\Entity::EDIT_NONE, System\Collection::FILTER_NEQ);
+        $link_fields = $this
+            ->getComponent()
+            ->getAllFields()
+            ->find('type', array('link', 'multilink'))
+            ->find('keyword', 'parent_id', System\Collection::FILTER_NEQ)
+            ->find('is_editable', 1);
         $fields = array();
         foreach ($link_fields as $lf) {
-            if ($lf['type'] == Field\Entity::FIELD_LINK) {
+            if ($lf['type'] == 'link') {
                 $target_com_id = $lf['format']['target'];
             } else {
                 $target_com_id = isset($lf['format']['mm_datatype'])
@@ -637,7 +527,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if (!$common_ib || !$common_ib['page_id']) {
             return;
         }
-        $common_page = fx::data('page', $common_ib['page_id']);
+        $common_page = fx::data('floxim.main.page', $common_ib['page_id']);
         return $common_page;
     }
 
@@ -749,218 +639,19 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     public function doListFiltered()
     {
-        $this->listen('query_ready', function ($e) {
+        $conds = $this->getParam('conditions');
+        if (!is_string($conds)) {
+            return;
+        }
+        $conds = json_decode($conds, true);
+        $this->listen('query_ready', function ($e) use ($conds) {
             $q = $e['query'];
-            $ctr = $e['controller'];
-            $component = $ctr->getComponent();
-            $fields = $component->getAllFields();
-            $conditions = $ctr->getParam('conditions');
-            $conditions = is_array($conditions) ? fx::collection($conditions) : fx::collection();
-            
-            if (!$conditions->findOne('name', 'site_id')) {
-                $conditions[] = array(
-                    'name'     => 'site_id',
-                    'operator' => '=',
-                    'value'    => array(fx::env('site')->get('id'))
-                );
-            }
-            $target_parent_id = null;
-            $target_infoblock_id = null;
-            foreach ($conditions as $condition) {
-                if (
-                    $condition['name'] === 'parent_id'
-                    && isset($condition['value'])    
-                    && is_array($condition['value'])
-                    && count($condition['value']) === 1
-                ) {
-                    $target_parent_id = current($condition['value']);
-                } elseif (
-                    $condition['name'] === 'infoblock_id'
-                    && isset($condition['value'])
-                    && is_array($condition['value'])
-                    && count($condition['value']) === 1
-                ) {
-                    $target_infoblock_id = current($condition['value']);
-                }
-
-                $field = $fields->findOne('keyword', $condition['name']);
-                $error = false;
-                switch ($condition['operator']) {
-                    case 'contains':
-                    case 'not_contains':
-                        $condition['value'] = '%' . $condition['value'] . '%';
-                        $condition['operator'] = ($condition['operator'] == 'not_contains' ? 'NOT ' : '') . 'LIKE';
-                        break;
-                    case 'next':
-                        if (isset($condition['value']) && !empty($condition['value'])) {
-                            $q->where(
-                                $condition['name'],
-                                '> NOW()',
-                                'RAW'
-                            );
-                            $condition['value'] = '< NOW() + INTERVAL ' . $condition['value'] . ' ' . $condition['interval'];
-                            $condition['operator'] = 'RAW';
-                        } else {
-                            $error = true;
-                        }
-                        break;
-                    case 'last':
-                        if (isset($condition['value']) && !empty($condition['value'])) {
-                            $q->where(
-                                $condition['name'],
-                                '< NOW()',
-                                'RAW'
-                            );
-                            $condition['value'] = '> NOW() - INTERVAL ' . $condition['value'] . ' ' . $condition['interval'];
-                            $condition['operator'] = 'RAW';
-                        } else {
-                            $error = true;
-                        }
-                        break;
-                    case 'is_current':
-                        $condition['value'] = array(fx::env('page_id'));
-                        $condition['operator'] = '=';
-                        break;
-                    case 'is_not_current':
-                        $condition['value'] = array(fx::env('page_id'));
-                        $condition['operator'] = '!=';
-                        break;
-                    case 'in_future':
-                        $condition['value'] = '> NOW()';
-                        $condition['operator'] = 'RAW';
-                        break;
-                    case 'in_past':
-                        $condition['value'] = '< NOW()';
-                        $condition['operator'] = 'RAW';
-                        break;
-                }
-                
-                $is_link_field = false;
-                
-                if ($field['type'] == Field\Entity::FIELD_LINK) {
-                    $is_link_field = true;
-                    if (!isset($condition['value'])) {
-                        $error = true;
-                    } else {
-                        $ids = array();
-                        foreach ($condition['value'] as $v) {
-                            $ids[] = $v;
-                        }
-                        $condition['value'] = $ids;
-                        if ($condition['operator'] === '!=') {
-                            $condition['operator'] = 'NOT IN';
-                        } elseif ($condition['operator'] === '=') {
-                            $condition['operator'] = 'IN';
-                        }
-                    }
-                }
-
-                if ($field['type'] == Field\Entity::FIELD_MULTILINK) {
-                    $is_link_field = true;
-                    if (!isset($condition['value']) || !is_array($condition['value'])) {
-                        $error = true;
-                    } else {
-                        foreach ($condition['value'] as $v) {
-                            $ids[] = $v;
-                        }
-                        $relation = $field->getRelation();
-                        if ($relation[0] === System\Finder::MANY_MANY) {
-                            $content_ids = fx::data($relation[1])->
-                            where($relation[5], $ids)->
-                            select($relation[2])->
-                            getData()->getValues($relation[2]);
-                        } else {
-                            $content_ids = fx::data($relation[1])->
-                            where('id', $ids)->
-                            select($relation[2])->getData()->getValues($relation[2]);
-                        }
-                        $condition['name'] = 'id';
-                        $condition['value'] = $content_ids;
-                        if ($condition['operator'] === '!=') {
-                            $condition['operator'] = 'NOT IN';
-                        } elseif ($condition['operator'] === '=') {
-                            $condition['operator'] = 'IN';
-                        }
-                    }
-                }
-
-                if ($condition['name'] == 'infoblock_id') {
-                    if (empty($condition['value'])) {
-                        continue;
-                    }
-                    $target_ib = fx::data('infoblock', $condition['value']);//->first();
-                    if (!$target_ib) {
-                        continue;
-                    }
-                    $target_ib = $target_ib->first();
-                    if ($target_ib['action'] == 'list_selected') {
-                        $linkers = fx::data('linker')->where('infoblock_id', $target_ib['id'])
-                            ->all();
-                        $content_ids = $linkers->getValues('linked_id');
-                        $condition['name'] = 'id';
-                        $condition['value'] = $content_ids;
-                        $condition['operator'] = 'IN';
-                    }
-                }
-                
-                if (!$error) {
-                    if ($is_link_field && $condition['operator'] === 'NOT IN') {
-                        $q->whereOr(
-                            array(
-                                $condition['name'],
-                                $condition['value'],
-                                $condition['operator']
-                            ),
-                            array (
-                                $condition['name'],
-                                false,
-                                'IS NULL'
-                            )
-                        );
-                    } else {
-                        $q->where(
-                            $condition['name'],
-                            $condition['value'],
-                            $condition['operator']
-                        );
-                    }
-                }
-            }
+            $q->where('site_id', fx::env('site_id'));
+            $q->applyConditions($conds);
         });
-
         $this->doList();
-        
-        $conditions = $this->getParam('conditions');
-        
-        $has_parent_cond = false;
-        if (is_array($conditions)) {
-            foreach ($conditions as $cond) {
-                if (
-                    $cond['name'] === 'parent_id' && 
-                    $cond['operator'] === '=' && 
-                    count($cond['value']) === 1
-                ) {
-                    $parent_id = current($cond['value']);
-                    $parent_page = fx::data('page', $parent_id);
-                    if ($parent_page) {
-                        $this->assign('more_url', $parent_page['url']);
-                        $has_parent_cond = true;
-                        break;
-                    }
-                }
-            }
-        }
-        
-        if (!$has_parent_cond) {
-            $items = $this->getResult('items');
-            $common_page = $this->getCommonInfoblockPage($items);
-            if ($common_page) {
-                $this->assign('more_url', $common_page['url']);
-            }
-        }
     }
-
-
+    
     /**
      * $_content_type may be one of the values
      * the table fx_component in the keyword field
@@ -1182,37 +873,63 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     public function doLivesearch()
     {
         $input = $_POST;
-        if (!isset($input['content_type'])) {
-            return;
-        }
-        $content_type = $input['content_type'];
-        $finder = fx::data($content_type);
-        if (($finder instanceof \Floxim\Main\Content\Finder) and $content_type != 'user') {
-            $finder->where('site_id', fx::env('site')->get('id'));
-        }
-        if (isset($input['skip_ids']) && is_array($input['skip_ids'])) {
-            $finder->where('id', $input['skip_ids'], 'NOT IN');
-        }
-        if (isset($input['ids'])) {
-            $finder->where('id', $input['ids']);
-        }
-        if (isset($input['conditions'])) {
-            foreach ($input['conditions'] as $cond_field => $cond_val) {
-                if (is_numeric($cond_field) && is_array($cond_val)) {
-                    $finder->where($cond_val[0], $cond_val[1], isset($cond_val[3]) ? $cond_val[3] : '=');
-                } elseif (is_array($cond_val)) {
-                    $finder->where($cond_field, $cond_val[0], $cond_val[1]);
-                } else {
-                    $finder->where($cond_field, $cond_val);
-                }
+        $params = isset($input['params']) ? (array) $input['params'] : array();
+        $id_field = isset($params['id_field']) ? $params['id_field'] : 'id';
+        if (isset($params['relation_field_id'])) {
+            $entity_data = array();
+            
+            $field = fx::data('field')->getById( (int) $params['relation_field_id']);
+            
+            if (isset($input['form_data'])) {
+                $form_data = array();
+                parse_str($input['form_data'], $form_data);
+                $entity_data = isset($form_data['content']) ? $form_data['content'] : array();
+                $entity_type = isset($form_data['content_type']) ? $form_data['content_type'] : null;
+            }
+            if (!$entity_type) {
+                $entity_type = isset($params['linking_entity_type']) ? $params['linking_entity_type'] : $field['component']['keyword'];
+            }
+            
+            
+            $entity_finder = fx::data($entity_type);
+            $entity_id = isset($params['entity_id']) && $params['entity_id'] ? (int) $params['entity_id'] : null;
+            
+            if ($entity_id) {
+                $entity = $entity_finder->getById($entity_id);
+            } else {
+                $entity = $entity_finder->create();
+            }
+            $entity->setFieldValues($entity_data);
+            $finder = $field->getTargetFinder($entity);
+        } else {
+            if (!isset($input['content_type'])) {
+                return;
+            }
+            $content_type = $input['content_type'];
+            $finder = fx::data($content_type);
+            if (($finder instanceof \Floxim\Main\Content\Finder) and $content_type != 'user') {
+                $finder->where('site_id', fx::env('site')->get('id'));
             }
         }
-        $res = $finder->livesearch($_POST['term'], (isset($_POST['limit']) && $_POST['limit']) ? $_POST['limit'] : 20);
+        if (isset($input['skip_ids']) && is_array($input['skip_ids'])) {
+            $finder->where($id_field, $input['skip_ids'], 'NOT IN');
+        }
+        if (isset($input['ids'])) {
+            $finder->where($id_field, $input['ids']);
+        }
+        if (isset($input['conditions'])) {
+            $finder->livesearchApplyConditions($input['conditions']);
+        }
+        $term = isset($input['term']) ? $input['term'] : '';
+        $limit = isset($input['limit']) ? $input['limit'] : 20;
+        $res = $finder->livesearch($term, $limit, $id_field);
+        
+        // sort items in the original way
         if (isset($input['ids'])) {
             $results = fx::collection($res['results']);
             $res['results'] = array();
             foreach ($input['ids'] as $id) {
-                $item = $results->findOne('id', $id);
+                $item = $results->findOne($id_field, $id);
                 if ($item) {
                     $res['results'][]= $item;
                 }

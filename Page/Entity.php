@@ -22,6 +22,9 @@ class Entity extends \Floxim\Main\Content\Entity
         if ($this->isIndexPage()) {
             return;
         }
+        if (!$this->isReal()) {
+            return;
+        }
         if (empty($this['url']) && !empty($this['name'])) {
             $url = fx::util()->strToLatin($this['name']);
             $url = preg_replace("~[^a-z0-9_-]+~i", '-', $url);
@@ -41,7 +44,7 @@ class Entity extends \Floxim\Main\Content\Entity
             }
             $index = 1;
             // check already used page url
-            while ($page = fx::data('page')->getByUrl($url)) {
+            while ($page = fx::data('floxim.main.page')->getByUrl($url)) {
                 if ($page['id'] != $this['id']) {
                     $index++;
                     $url = preg_replace("~\-" . ($index - 1) . "$~", '', $url) . '-' . $index;
@@ -51,15 +54,38 @@ class Entity extends \Floxim\Main\Content\Entity
                 }
             }
             
-            $url = preg_replace("~^/~", '', $url);
+            //$url = preg_replace("~^/~", '', $url);
 
             $this['url'] = $url;
+        }
+    }
+    
+    
+    public function _getUrl()
+    {
+        $type = $this['link_type'];
+        switch ($type) {
+            case 'real': default:
+                return $this->getReal('url');
+            case 'alias':
+                return $this['linked_page']['url'];
+            case 'external':
+                $url = $this['external_url'];
+                if (!preg_match("~^https?://~", $url)) {
+                    $url = 'http://'.$url;
+                }
+                return $url;
+            case 'none':
+                return '';
         }
     }
 
     protected function afterInsert()
     {
         parent::afterInsert();
+        if (!$this->isReal()) {
+            return;
+        }
         if (empty($this['url'])) {
             $this['url'] = '/page-' . $this['id'] . '.html';
             $this->save();
@@ -112,6 +138,35 @@ class Entity extends \Floxim\Main\Content\Entity
             }
         }
     }
+    
+    public function isReal()
+    {
+        return $this['link_type'] === 'real' || !$this['link_type'];
+    }
+    
+    public function getFormFieldMeta($field) {
+        $res = $field->getJsField($this);
+        $res['parent'] = array('link_type' => 'real');
+        return $res;
+    }
+    
+    public function getFormFieldLinkedPageId($field) {
+        $res = $field->getJsField($this);
+        $res['parent'] = array('link_type' => 'alias');
+        return $res;
+    }
+    
+    public function getFormFieldFullText($field) {
+        $res = $field->getJsField($this);
+        $res['parent'] = array('link_type' => 'real');
+        return $res;
+    }
+    
+    public function getFormFieldExternalUrl($field) {
+        $res = $field->getJsField($this);
+        $res['parent'] = array('link_type' => 'external');
+        return $res;
+    }
 
     protected function afterDelete()
     {
@@ -150,7 +205,7 @@ class Entity extends \Floxim\Main\Content\Entity
      */
     public function getNestedInfoblocks($with_own = true)
     {
-        $q = fx::data('page')->descendantsOf($this, false);
+        $q = fx::data('floxim.main.page')->descendantsOf($this, false);
         $q->join('{{infoblock}}', '{{infoblock}}.page_id = {{floxim_main_content}}.id');
         $page_ids = $q->all()->getValues('id');
         if ($with_own) {
@@ -223,34 +278,5 @@ class Entity extends \Floxim\Main\Content\Entity
             return true;
         }
         return parent::isAvailableInSelectedBlock();
-    }
-    
-    public function getFormFields() 
-    {
-        $fields = parent::getFormFields();
-        $meta_fields = array('title', 'h1', 'url', 'keywords');
-        $first_meta = null;
-        $labels = array();
-        $fields->apply(function(&$f, $f_num) use ($meta_fields, &$first_meta, &$labels) {
-            if (in_array($f['id'], $meta_fields)) {
-                $labels[]= $f['label'];
-                $f['group'] = 'meta';
-                if (is_null($first_meta)) {
-                    $first_meta = $f_num;
-                }
-            }
-        });
-        if (!is_null($first_meta)) {
-            $fields->addBefore($first_meta, array(
-                array(
-                    'id' => 'meta',
-                    'type' => 'group',
-                    'keyword' => 'meta',
-                    'label' => fx::alang("Meta fields"),
-                    'description' => '('.join(', ', $labels).')'
-                )
-            ));
-        }
-        return $fields;
     }
 }

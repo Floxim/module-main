@@ -9,52 +9,19 @@ use Floxim\Floxim\System\Fx as fx;
 class Finder extends \Floxim\Floxim\Component\Basic\Finder
 {
 
-    static $stored_relations = array();
-    
     public static $isStaticCacheUsed = true;
     
     public static function isStaticCacheUsed() {
         return true;
     }
     
+    public function orderDefault() {
+        $this->order('priority');
+    }
+    
     protected static function getStaticCacheKey()
     {
         return 'data-meta-content';
-    }
-    
-    public function relations()
-    {
-        $class = get_called_class();
-        if (isset(self::$stored_relations[$class])) {
-            return static::$stored_relations[$class];
-        }
-        
-        $relations = array();
-        $fields = fx::component($this->component_id)->
-                getAllFields()->
-                find('type', array(Field\Entity::FIELD_LINK, Field\Entity::FIELD_MULTILINK));
-        foreach ($fields as $f) {
-            if (!($relation = $f->getRelation())) {
-                continue;
-            }
-            switch ($f['type']) {
-                case Field\Entity::FIELD_LINK:
-                    $relations[$f->getPropName()] = $relation;
-                    break;
-                case Field\Entity::FIELD_MULTILINK:
-                    $relations[$f['keyword']] = $relation;
-                    break;
-            }
-        }
-        $relations ['component'] = array(
-            self::BELONGS_TO,
-            'component',
-            'type',
-            'keyword'
-        );
-        
-        self::$stored_relations[$class] = $relations;
-        return $relations;
     }
     
     public function getTree($children_key = 'children')
@@ -99,16 +66,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         }
         return $data;
     }
-
-    protected function getDefaultRelationFinder($rel)
-    {
-        $finder = parent::getDefaultRelationFinder($rel);
-        if (!$finder instanceof Lang\Finder && !$finder instanceof \Floxim\Floxim\Component\Infoblock\Finder) {
-            $finder->order('priority');
-        }
-        return $finder;
-    }
-
     
     public function contentExists()
     {
@@ -278,7 +235,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             
             if (isset($c_params['infoblock_id']) && isset($c_params['parent_id'])) {
                 $c_ib = fx::data('infoblock', $c_params['infoblock_id']);
-                $c_parent = fx::data('content', $c_params['parent_id']);
+                $c_parent = fx::data('floxim.main.content', $c_params['parent_id']);
                 $c_ib_avail = 
                         $c_ib && 
                         $c_parent && 
@@ -288,7 +245,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
                     continue;
                 }
             }
-            
             $com_types = $com->getAllVariants();
             foreach ($com_types as $com_type) {
                 // skip abstract components like "publication", "contact" etc.
@@ -340,7 +296,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         
         
         $content_params = self::extractCollectionParams($collection, false);
-        //fx::log($common_params, $content_params);
         $strict_type = isset($content_params['type']) ? $content_params['type'] : null;
         
         foreach ($variants as $var_com) {
@@ -381,13 +336,13 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             parent::livesearchApplyTerms($terms);
             return;
         }
-
-        $c_component = fx::data('component', $this->component_id);
+        
+        $c_component = $this->getComponent();
         $components = $c_component->getAllVariants();
         $name_conds = array();
         foreach ($components as $com) {
             $name_field = $com->fields()->findOne('keyword', 'name');
-            if (!$name_field) {
+            if (!$name_field || $name_field['parent_field_id']) {
                 continue;
             }
             $table = '{{' . $com->getContentTable() . '}}';
@@ -408,14 +363,32 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         }
         call_user_func_array(array($this, 'whereOr'), $name_conds);
     }
-
-    /**
-     * Add filter to get subtree for one ore more parents
-     * @param mixed $parent_ids
-     * @param boolean $add_parents - include parents to subtree
-     * @return fx_data_content
-     */
-    public function descendantsOf($parent_ids, $include_parents = false)
+    
+    public function conditionIs($type) 
+    {
+        if (!is_array($type)) {
+            $type = array($type);
+        }
+        $variants = array();
+        foreach ($type as $c_type) {
+            $com = fx::component($c_type);
+            $variants = array_merge($variants, $com->getAllVariants()->getValues('keyword'));
+        }
+        $variants = array_unique($variants);
+        return array('type', $variants, 'in');
+    }
+    
+    public function processConditionIsUnder($field, $value) {
+        $res = $this->conditionDescendantsOf($value, false, $field);
+        return $res;
+    }
+    
+    public function processConditionIsUnderOrEquals($field, $value) {
+        $res = $this->conditionDescendantsOf($value, true, $field);
+        return $res;
+    }
+    
+    public function conditionDescendantsOf($parent_ids, $include_parents = false, $field = null)
     {
         if ($parent_ids instanceof System\Collection) {
             $non_content = $parent_ids->find(function ($i) {
@@ -433,16 +406,30 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             if (is_numeric($parent_ids)) {
                 $parent_ids = array($parent_ids);
             }
-            $parents = fx::data('content', $parent_ids);
+            $parents = fx::data('floxim.main.content', $parent_ids);
         }
         $conds = array();
+        $prefix = $field ? $field.'.' : '';
         foreach ($parents as $p) {
-            $conds [] = array('materialized_path', $p['materialized_path'] . $p['id'] . '.%', 'like');
+            $conds [] = array($prefix.'materialized_path', $p['materialized_path'] . $p['id'] . '.%', 'like');
         }
         if ($include_parents) {
             $conds [] = array('id', $parent_ids, 'IN');
         }
-        $this->where($conds, null, 'OR');
+        $res = count($conds) === 1 ? $conds[0] : array($conds, null, 'or');
+        return $res;
+    }
+
+    /**
+     * Add filter to get subtree for one ore more parents
+     * @param mixed $parent_ids
+     * @param boolean $add_parents - include parents to subtree
+     * @return fx_data_content
+     */
+    public function descendantsOf($parent_ids, $include_parents = false)
+    {
+        $cond = $this->conditionDescendantsOf($parent_ids, $include_parents);
+        $this->where($cond);
         return $this;
     }
 }
