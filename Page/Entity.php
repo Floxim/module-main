@@ -44,7 +44,7 @@ class Entity extends \Floxim\Main\Content\Entity
             }
             $index = 1;
             // check already used page url
-            while ($page = fx::data('floxim.main.page')->getByUrl($url)) {
+            while ($page = fx::data('floxim.main.page')->getByUrl($url, $this['site_id'])) {
                 if ($page['id'] != $this['id']) {
                     $index++;
                     $url = preg_replace("~\-" . ($index - 1) . "$~", '', $url) . '-' . $index;

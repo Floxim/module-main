@@ -980,7 +980,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     }
     
     public function getParentConfigFields()
-    {        
+    {
         $path = fx::env('path');
         
         $vals = array(
