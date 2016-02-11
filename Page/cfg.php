@@ -4,7 +4,7 @@ use Floxim\Floxim\System\Fx as fx;
 
 $record_templates = fx::controller($component['keyword'].':record')
                         ->getAvailableTemplates(fx::env('layout'));
-fx::log('rtpls', $component['keyword'], $record_templates);
+
 
 $page_config = array(
     'actions' => array(

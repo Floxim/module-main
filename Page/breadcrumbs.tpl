@@ -1,4 +1,4 @@
-<div fx:template="breadcrumbs" class="breadcrumbs" fx:of="page:breadcrumbs">
+<div fx:template="breadcrumbs" class="breadcrumbs" fx:of="floxim.main.page:breadcrumbs">
     <a fx:item href="{$url}">{$name}</a>
     <span class="separator" fx:separator>{%separator} / {/%}</span>
     <h1 fx:item="$is_current">{$h1}{$name /}{/$}</h1>

@@ -76,13 +76,19 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         if ($this['infoblock_id']) {
             $res['type'] = 'hidden';
             $res['value'] = $this['infoblock_id'];
+        } else {
+            $avail_ibs = $this->getRelationFinderInfoblockId()->all();
+            if (count($avail_ibs) === 0) {
+                $res['type'] = 'hidden';
+                $res['value'] = null;
+            }
         }
         return $res;
     }
 
     public function getFormFieldParentId($field = null)
     {
-        if (!$this['id'] && $this['parent_id']) {
+        if (!$this['id'] && $this['parent_id'] && $this['type'] !== 'floxim.nav.section') {
             return;
         }
 
@@ -142,40 +148,13 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         } elseif ( ! ($ibs instanceof \Floxim\Floxim\System\Collection) ) {
             $ibs = fx::collection($ibs);
         }
-        
         $conds = array();
         $finder = fx::data('floxim.main.page');
         foreach ($ibs as $ib) {
-            $c_cond = array();
-            
-            $parent_data_type = $ib['scope']['page_type'];
-            if ($parent_data_type) {
-                $c_cond[]= $finder->conditionIs( $parent_data_type );
-            }
-            $root_id = $ib['page_id'];
-            if (!$root_id) {
-                $root_id = fx::data('site', $ib['site_id'])->get('index_page_id');
-            }
-            
-            if (isset($ib['params']['is_pass_through'])) {
-                $is_pass_through = $ib['params']['is_pass_through'];
-            } else {
-                // load forced param from controller config
-                $ctr = $ib->initController();
-                $is_pass_through = $ctr->getParam('is_pass_through');
-            }
-
-            if ($ib['scope']['pages'] === 'this' || $is_pass_through) {
-                //$finder->where('id', $root_id);
-                $c_cond[]= array('id', $root_id);
-            } else {
-                //$finder->descendantsOf($root_id, $ib['scope']['pages'] != 'children');
-                $c_cond[]= $finder->conditionDescendantsOf($root_id, $ib['scope']['pages'] != 'children');
-            }
-            
-            $conds []= array($c_cond, null, 'and');
+            $c_cond = $ib->getParentFinderConditions();
+            $conds []= $c_cond;
         }
-        $finder->where( array($conds, null, 'or') );
+        $finder->where( $conds, null, 'or' );
         return $finder;
     }
     

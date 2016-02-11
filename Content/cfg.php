@@ -92,13 +92,9 @@ return array(
             'settings' => array(
                 'sorting' => array(
                     'values' => array( array('manual', fx::alang('Manual', 'controller_component') ) ) + $sort_fields
-                ),
-                'is_pass_through' => array(
-                    'label' => fx::alang('Pass-through data', 'controller_component'),
-                    'type' => 'checkbox',
-                    'parent' => array('scope[complex_scope]' => '!~this')
                 )
             ) 
+                + $this->getParentConfigFields()
                 + $this->getTargetConfigFields()
                 + $this->getLostContentField(),
             'defaults' => array(

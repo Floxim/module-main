@@ -29,7 +29,7 @@ class Finder extends \Floxim\Main\Content\Finder
     {
         $url_variants = array($url);
         if ($site_id === null) {
-            $site_id = fx::env('site')->get('id');
+            $site_id = fx::env('site_id');
         }
 
         $url_with_no_params = preg_replace("~\?.+$~", '', $url);

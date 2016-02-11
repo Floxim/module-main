@@ -73,7 +73,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 $parent_id = $ib['page_id'];
             }
             foreach ($ids as $id) {
-                $linker = fx::data('linker')->create();
+                $linker = fx::data('floxim.main.linker')->create();
                 $linker['parent_id'] = $parent_id;
                 $linker['infoblock_id'] = $ib['id'];
                 $linker['linked_id'] = $id;
@@ -82,14 +82,42 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
         }
     }
+    
+    public function getParentFinderConditions()
+    {
+        $ib = $this->getInfoblock();
+        if ($ib['scope_type'] === 'one_page') {
+            return array('id', $ib['page_id']);
+        }
+        if ($ib['scope_type'] === 'custom') {
+            $parent_type = $ib['params']['parent_type'];
+            $scope = $ib['scope_entity'];
+            fx::log($ib, $scope->getConditions());
+            if ($parent_type === 'current_page') {
+                $finder = $this->getFinder();
+                $conds = $finder->processCondition($scope->getConditions());
+                return $conds;
+            } 
+            if (is_numeric($parent_type)) {
+                return array('id', $parent_type);
+            }
+        }
+        return array(true);
+    }
 
     public function dropSelectedLinkers()
     {
-        $linkers = fx::data('linker')->where('infoblock_id', $this->getParam('infoblock_id'))
-            ->all();
-        $linkers->apply(function ($i) {
-            $i->delete();
-        });
+        fx::data('floxim.main.linker')
+            ->where(
+                'infoblock_id', 
+                $this->getParam('infoblock_id')
+            )
+            ->all()
+            ->apply(
+                function ($i) {
+                    $i->delete();
+                }
+            );
     }
 
     /*
@@ -97,7 +125,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
      */
     protected function getSelectedLinkers()
     {
-        $q = fx::data('linker')
+        $q = fx::data('floxim.main.linker')
                 ->where('infoblock_id', $this->getParam('infoblock_id'))
                 ->where('linked_id', 0, '!=');
         $sorting = $this->getParam('sorting');
@@ -270,10 +298,14 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     {
         if (is_null(self::$lost_content_stats)) {
             self::$lost_content_stats = array();
+            $site_id = fx::env('site_id');
+            if (!$site_id) {
+                return 0;
+            }
             $lost = fx::db()->getResults(
-                    'select count(*) as cnt, `type` 
+                'select count(*) as cnt, `type` 
                 from {{floxim_main_content}} 
-                where infoblock_id != "0" and site_id = '.fx::env('site_id').' 
+                where infoblock_id != "0" and site_id = '.$site_id.' 
                 group by type'
             );
             foreach ($lost as $entry) {
@@ -503,6 +535,13 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     protected function getParentId()
     {
+        $parent_type = $this->getParam('parent_type');
+        if ($parent_type === 'current_page') {
+            return fx::env('page_id');
+        }
+        if (is_numeric($parent_type)) {
+            return (int) $parent_type;
+        }
         $ib = fx::data('infoblock', $this->getParam('infoblock_id'));
         $parent_id = null;
         if ($this->getParam('is_pass_through')) {
@@ -647,7 +686,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $this->listen('query_ready', function ($e) use ($conds) {
             $q = $e['query'];
             $q->where('site_id', fx::env('site_id'));
-            $q->applyConditions($conds);
+            if ($conds) {
+                $q->applyConditions($conds);
+            }
         });
         $this->doList();
     }
@@ -936,5 +977,38 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
         }
         fx::complete($res);
+    }
+    
+    public function getParentConfigFields()
+    {        
+        $path = fx::env('path');
+        
+        $vals = array(
+            array('current_page', '[Текущая страница]')
+        );
+        
+        foreach ($path as $page) {
+            $vals []= array($page['id'], $page->getName());
+        }
+        
+        $c_parent = $this->getParam('parent_type');
+        
+        if (is_numeric($c_parent) && ! ($path->findOne('id', (int) $c_parent))) {
+            $c_parent_page = fx::data('floxim.main.page', $c_parent);
+            if ($c_parent_page) {
+                $vals []= array( $c_parent_page['id'], $c_parent_page['name']);
+            }
+        }
+        
+        return array(
+            'parent_type' => array(
+                'type' => 'livesearch',
+                'label' => 'Родитель',
+                'value' => 'current_page',
+                'parent' => array('scope[type]' => '!~one_page'),
+                'values' => $vals,
+                'hidden_on_one_value' => true
+            )
+        );
     }
 }
