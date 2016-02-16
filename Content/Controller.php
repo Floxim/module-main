@@ -98,8 +98,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 $conds = $finder->processCondition($scope->getConditions());
                 return $conds;
             } 
-            if (is_numeric($parent_type)) {
-                return array('id', $parent_type);
+            if ($parent_type === 'certain_page') {
+                $parent_id = $ib['params']['parent_id'];
+                return array('id', $parent_id);
             }
         }
         return array(true);
@@ -358,7 +359,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
 
     public function doList()
     {
-        // e.g. fake items for list
         $items = $this->getResult('items');
         
         if (!$items) {
@@ -384,12 +384,17 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         $this->trigger('result_ready');
     }
 
-    protected function getFakeItems($count = 3)
+    protected function getFakeItems($count = 4)
     {
-        $finder = $this->getFinder();
+        $coms = $this->getComponent()->getAllVariants()->find('is_abstract', 0)->getValues();
         $items = fx::collection();
+        $index = 0;
         foreach (range(1, $count) as $n) {
-            $items [] = $finder->fake();
+            if (!isset($coms[$index])) {
+                $index = 0;
+            }
+            $items [] = $coms[$index]->getEntityFinder()->fake();
+            $index++;
         }
         return $items;
     }
@@ -401,7 +406,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if ($this->getParam('is_fake')) {
             $count = $this->getParam('limit');
             if (!$count) {
-                $count = 3;
+                $count = 4;
             }
             if ($this->getParam('bind_lost_content')) {
                 $items = $this->getLostContent();
@@ -536,23 +541,15 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     protected function getParentId()
     {
         $parent_type = $this->getParam('parent_type');
-        if ($parent_type === 'current_page') {
-            return fx::env('page_id');
+        switch ($parent_type) {
+            case 'current_page':
+                return fx::env('page_id');
+            case 'certain_page':
+                return (int) $this->getParam('parent_id');
+            case 'expression':
+                // some magic here
+                break;
         }
-        if (is_numeric($parent_type)) {
-            return (int) $parent_type;
-        }
-        $ib = fx::data('infoblock', $this->getParam('infoblock_id'));
-        $parent_id = null;
-        if ($this->getParam('is_pass_through')) {
-            $parent_id = $ib['page_id'];
-            if ($parent_id === 0) {
-                $parent_id = fx::env('site')->get('index_page_id');
-            }
-        } else {
-            $parent_id = fx::env('page')->get('id');
-        }
-        return $parent_id;
     }
     
     protected function getCommonInfoblockPage($items)
@@ -981,33 +978,24 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     
     public function getParentConfigFields()
     {
-        $path = fx::env('path');
+        
         
         $vals = array(
-            array('current_page', '[Текущая страница]')
+            array('current_page', 'Разные на разных страницах'),
+            array('certain_page', 'Везде одинаковые')
         );
-        
-        foreach ($path as $page) {
-            $vals []= array($page['id'], $page->getName());
-        }
-        
-        $c_parent = $this->getParam('parent_type');
-        
-        if (is_numeric($c_parent) && ! ($path->findOne('id', (int) $c_parent))) {
-            $c_parent_page = fx::data('floxim.main.page', $c_parent);
-            if ($c_parent_page) {
-                $vals []= array( $c_parent_page['id'], $c_parent_page['name']);
-            }
-        }
-        
         return array(
             'parent_type' => array(
                 'type' => 'livesearch',
-                'label' => 'Родитель',
+                'label' => 'Данные',
                 'value' => 'current_page',
                 'parent' => array('scope[type]' => '!~one_page'),
                 'values' => $vals,
                 'hidden_on_one_value' => true
+            ),
+            'parent_id' => array(
+                'type' => 'hidden',
+                'value' => fx::env('page_id')
             )
         );
     }

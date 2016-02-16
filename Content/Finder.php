@@ -187,7 +187,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         
         $params = self::extractCollectionParams($collection);
         
-        fx::cdebug($params);
         if (!$params) {
             return;
         }
@@ -231,48 +230,43 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             $param_variants []= $concated_params;
         }
         
-        fx::cdebug($param_variants);
-        
         $placeholder_variants = array();
         foreach ($param_variants as $c_params) {
             $com = fx::component($c_params['_component']);
-            
             if (isset($c_params['infoblock_id']) && isset($c_params['parent_id'])) {
                 $c_ib = fx::data('infoblock', $c_params['infoblock_id']);
-                $c_parent = fx::data('floxim.main.content', $c_params['parent_id']);
-                $c_ib_avail = 
-                        $c_ib && 
-                        $c_parent && 
-                        ($c_ib['params']['is_pass_through'] || $c_ib->isAvailableOnPage($c_parent));
-                
-                if (!$c_ib_avail) {
-                    fx::cdebug(1);
-                    continue;
+                if (!$c_ib || !$c_ib['is_preset']) {
+                    $c_parent = fx::data('floxim.main.content', $c_params['parent_id']);
+                    $c_ib_avail = 
+                            $c_ib && 
+                            $c_parent && 
+                            ($c_ib['params']['is_pass_through'] || $c_ib->isAvailableOnPage($c_parent));
+
+                    if (!$c_ib_avail) {
+                        continue;
+                    }
                 }
             }
             $com_types = $com->getAllVariants();
             foreach ($com_types as $com_type) {
-                fx::cdebug($c_params, $com_type['keyword']);
                 // skip abstract components like "publication", "contact" etc.
                 if (
                     $com_type['is_abstract'] && 
                     (!isset($c_params['type']) || ($com_type['keyword'] !== $c_params['type']) )
                 ) {
-                    fx::cdebug(2);
                     continue;
                 }
                 $com_key = $com_type['keyword'];
                 if (isset($c_params['type']) && $c_params['type'] !== $com_key) {
-                    fx::cdebug(3);
                     continue;
                 }
                 if (!isset($placeholder_variants[$com_key])) {
                     $placeholder = fx::data($com_key)->create($c_params);
+                    /*
                     if (!$placeholder->hasAvailableInfoblock() && false) {
-                        fx::cdebug(4);
                         continue;
                     }
-                    
+                    */
                     $placeholder_meta = array(
                         'placeholder' => $c_params + array('type' => $com_key),
                         'placeholder_name' => $com_type->getItemName('add')
