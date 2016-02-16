@@ -92,7 +92,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if ($ib['scope_type'] === 'custom') {
             $parent_type = $ib['params']['parent_type'];
             $scope = $ib['scope_entity'];
-            fx::log($ib, $scope->getConditions());
             if ($parent_type === 'current_page') {
                 $finder = $this->getFinder();
                 $conds = $finder->processCondition($scope->getConditions());
