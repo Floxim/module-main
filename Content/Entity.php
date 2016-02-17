@@ -134,6 +134,26 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         return $ib;
     }
     
+    public function filterAvailableInfoblocksByParent($ibs, $parent_id = null)
+    {
+        if (func_num_args() === 1) {
+            $parent_id = $this['parent_id'];
+        }
+        if (!$parent_id) {
+            return $ibs;
+        }
+        $that = $this;
+        $ibs = $ibs->find(
+            function($ib) use ($that, $parent_id) {
+                $ib_parents_finder = $that->getAvailParentsFinder($ib);
+                $parent = $ib_parents_finder->where('id', $parent_id)->one();
+                fx::cdebug($ib['name'], $parent, $ib_parents_finder, $ib_parents_finder->showQuery());
+                return $parent ? true : false;
+            }
+        );
+        return $ibs;
+    }
+    
     /**
      * Returns a finder to get "potential" parents for the object
      */
@@ -174,6 +194,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             $new_parent = $this['parent'];
             $this['level'] = $new_parent['level'] + 1;
             $this['materialized_path'] = $new_parent['materialized_path'] . $new_parent['id'] . '.';
+            $this['is_branch_published'] = $new_parent['is_published'] && $new_parent['is_branch_published'];
         }
         $this->handleMove();
         parent::beforeSave();

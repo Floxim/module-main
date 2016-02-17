@@ -262,11 +262,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
                 }
                 if (!isset($placeholder_variants[$com_key])) {
                     $placeholder = fx::data($com_key)->create($c_params);
-                    /*
-                    if (!$placeholder->hasAvailableInfoblock() && false) {
-                        continue;
-                    }
-                    */
                     $placeholder_meta = array(
                         'placeholder' => $c_params + array('type' => $com_key),
                         'placeholder_name' => $com_type->getItemName('add')
