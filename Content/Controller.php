@@ -86,21 +86,26 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     public function getParentFinderConditions()
     {
         $ib = $this->getInfoblock();
-        if ($ib['scope_type'] === 'one_page') {
-            return array('id', $ib['page_id']);
-        }
-        if ($ib['scope_type'] === 'custom') {
-            $parent_type = $ib['params']['parent_type'];
-            $scope = $ib['scope_entity'];
-            if ($parent_type === 'current_page') {
-                $finder = $this->getFinder();
-                $conds = $finder->processCondition($scope->getConditions());
-                return $conds;
-            } 
-            if ($parent_type === 'certain_page') {
-                $parent_id = $ib['params']['parent_id'];
-                return array('id', $parent_id);
-            }
+        switch ($ib['scope_type']) {
+            case 'one_page':
+                return array('id', $ib['page_id']);
+            case 'custom':
+            case 'all_pages':
+                $parent_type = $ib['params']['parent_type'];
+                if ($parent_type === 'current_page') {
+                    if ($ib['scope_type'] === 'custom') {
+                        $scope = $ib['scope_entity'];
+                        $finder = fx::data('floxim.main.page');
+                        $conds = $finder->processCondition($scope->getConditions());
+                        return $conds;
+                    }
+                    return array(true);
+                } 
+                if ($parent_type === 'certain_page') {
+                    $parent_id = $ib['params']['parent_id'];
+                    return array('id', $parent_id);
+                }
+                break;
         }
         return array(true);
     }
@@ -786,17 +791,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         return $actions;
     }
 
-    /**
-     * Return allow parent pages for current component
-     * This method need override for controller specific component
-     *
-     * @return fx_collection
-     */
-    protected function getAllowParentPages()
-    {
-        return fx::collection();
-    }
-    
     protected function initDataForm($action)
     {
         $id = 'form_'.$action.'_'
