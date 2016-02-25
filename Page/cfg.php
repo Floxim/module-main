@@ -3,7 +3,7 @@
 use Floxim\Floxim\System\Fx as fx;
 
 $record_templates = fx::controller($component['keyword'].':record')
-                        ->getAvailableTemplates(fx::env('layout'));
+                        ->getAvailableTemplates(fx::env('layout_id'));
 
 
 $page_config = array(
