@@ -193,8 +193,13 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         if ($this->isModified('parent_id') || ($this['parent_id'] && !$this['materialized_path'])) {
             $new_parent = $this['parent'];
             $this['level'] = $new_parent['level'] + 1;
-            $this['materialized_path'] = $new_parent['materialized_path'] . $new_parent['id'] . '.';
-            $this['is_branch_published'] = $new_parent['is_published'] && $new_parent['is_branch_published'];
+            if ($new_parent) {
+                $this['materialized_path'] = $new_parent['materialized_path'] . $new_parent['id'] . '.';
+                $this['is_branch_published'] = $new_parent['is_published'] && $new_parent['is_branch_published'];
+            } else {
+                $this['materialized_path'] = '.';
+                $this['is_branch_published'] = $this['is_published'];
+            }
         }
         $this->handleMove();
         parent::beforeSave();
