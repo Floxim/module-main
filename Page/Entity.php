@@ -16,6 +16,12 @@ class Entity extends \Floxim\Main\Content\Entity
         return $site && $site['index_page_id'] === $this['id'];
     }
     
+    public function _getH1()
+    {
+        $real = $this->getReal('h1');
+        return $real ? $real : $this['name'];
+    }
+    
     protected function beforeSave()
     {
         parent::beforeSave();
@@ -156,11 +162,13 @@ class Entity extends \Floxim\Main\Content\Entity
         return $res;
     }
     
+    /*
     public function getFormFieldFullText($field) {
         $res = $field->getJsField($this);
         $res['parent'] = array('link_type' => 'real');
         return $res;
     }
+    */
     
     public function getFormFieldExternalUrl($field) {
         $res = $field->getJsField($this);
