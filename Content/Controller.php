@@ -314,7 +314,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 group by type'
             );
             foreach ($lost as $entry) {
-                self::$lost_content_stats[$entry['type'] = $entry['cnt']];
+                self::$lost_content_stats[$entry['type']] = $entry['cnt'];
             }
         }
         $c_type = $this->getComponent()->get('keyword');

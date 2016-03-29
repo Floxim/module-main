@@ -240,7 +240,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
                     $c_ib_avail = 
                             $c_ib && 
                             $c_parent && 
-                            ($c_ib['params']['is_pass_through'] || $c_ib->isAvailableOnPage($c_parent));
+                            $c_ib->isAvailableOnPage($c_parent);
 
                     if (!$c_ib_avail) {
                         continue;
