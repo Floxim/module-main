@@ -278,8 +278,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         if ($this->getParam('infoblock_id')) {
             return array();
         }
-        $count_lost = $this->countLostContent() > 0;
-        if (!$count_lost) {
+        $count_lost = $this->countLostContent();
+        if ($count_lost < 1) {
             return array();
         }
         return array(
@@ -292,9 +292,10 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     
     protected function getLostFinder()
     {
-        return fx::content($this->getComponent()->get('keyword'))
+        $finder = fx::content($this->getComponent()->get('keyword'))
                 ->where('infoblock_id', 0)
                 ->where('site_id', fx::env('site_id'));
+        return $finder;
     }
     
     static $lost_content_stats = null;
@@ -309,9 +310,10 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
             $lost = fx::db()->getResults(
                 'select count(*) as cnt, `type` 
-                from {{floxim_main_content}} 
-                where infoblock_id != "0" and site_id = '.$site_id.' 
-                group by type'
+                from {{floxim_main_content}} as c
+                left join {{infoblock}} as ib on c.infoblock_id = ib.id
+                where ib.id IS NULL and c.site_id = '.$site_id.' 
+                group by c.type'
             );
             foreach ($lost as $entry) {
                 self::$lost_content_stats[$entry['type']] = $entry['cnt'];
@@ -319,12 +321,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
         }
         $c_type = $this->getComponent()->get('keyword');
         return isset(self::$lost_content_stats[$c_type]) ? self::$lost_content_stats[$c_type] : 0;
-        /*
-        return fx::db()->getVar(
-            $this->getLostFinder()->select('count(*)')->showQuery()
-        );
-         * 
-         */
     }
     
     public function getLostContent()
@@ -546,6 +542,8 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
     {
         $parent_type = $this->getParam('parent_type');
         switch ($parent_type) {
+            case 'none':
+                return null;
             case 'current_page':
                 return fx::env('page_id');
             case 'certain_page':
