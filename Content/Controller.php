@@ -91,6 +91,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 return array('id', $ib['page_id']);
             case 'custom':
             case 'all_pages':
+            case 'infoblock_pages':
                 $parent_type = $ib['params']['parent_type'];
                 if ($parent_type === 'current_page') {
                     if ($ib['scope_type'] === 'custom') {
@@ -274,6 +275,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
      */
     public function getLostContentField()
     {
+        return array();
         // infoblock already exists
         if ($this->getParam('infoblock_id')) {
             return array();

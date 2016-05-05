@@ -1,0 +1,26 @@
+.pagination_style_2 {
+    display:inline-block;
+    #__item {
+        display:inline-block;
+        height:25px;
+        width:25px;
+        border-radius:25px;
+        font-size:16px;
+        font-weight:bold;
+        margin-right:5px;
+        display:inline-flex;
+        .color_transparent('light');
+        text-decoration:none;
+        #_active {
+            background:@color_alt;
+            color:@color_main_inverted;
+            cursor:text;
+        }
+        #_disabled {
+            opacity:0.5;
+        }
+    }
+    #__wrap {
+        margin:auto;
+    }
+}

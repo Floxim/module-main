@@ -229,7 +229,6 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             }
             $param_variants []= $concated_params;
         }
-        
         $placeholder_variants = array();
         foreach ($param_variants as $c_params) {
             $com = fx::component($c_params['_component']);

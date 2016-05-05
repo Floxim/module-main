@@ -70,11 +70,8 @@ $page_config = array(
                         'controller' => $ctr->getControllerName(),
                         'action' => 'record',
                         'name' => $content_type.' record',
-                        'page_id' => $list_ib['page_id'],
-                        'scope' => array(
-                            'pages' => 'children',
-                            'page_type' => $content_type
-                        )
+                        'scope_type' => 'infoblock_pages',
+                        'scope_infoblock_id' => $list_ib['id']
                     )
                 );
                 $rec_ib->save();
