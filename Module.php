@@ -8,6 +8,7 @@ class Module extends \Floxim\Floxim\Component\Module\Entity {
     public function init()
     {
         $this->handleLinkers();
+        $this->handleThumbs();
     }
     
     protected function handleLinkers()
@@ -21,6 +22,26 @@ class Module extends \Floxim\Floxim\Component\Module\Entity {
             $linkers->apply(function($l) {
                 $l->delete();
             });
+        });
+    }
+    
+    protected function handleThumbs()
+    {
+        fx::listen('unlink', function($e) {
+            $f = $e['file'];
+            if (fx::files()->isMetaFile($f)) {
+                return;
+            }
+            if (fx::path()->isInside($f, fx::path('@thumbs')) ) {
+                return;
+            }
+            if (!fx::path()->isInside($f, fx::path('@content_files')) ) {
+                return;
+            }
+            $thumbs = \Floxim\Floxim\System\Thumb::findThumbs($f);
+            foreach ($thumbs as $thumb) {
+                fx::files()->rm($thumb);
+            }
         });
     }
 }
