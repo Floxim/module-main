@@ -9,11 +9,15 @@
         font-weight:bold;
         margin-right:5px;
         display:inline-flex;
-        .color_transparent('light');
+        .tcolor( main 2 );
         text-decoration:none;
         #_active {
+            /*
             background:@color_alt;
             color:@color_main_inverted;
+            */
+            .color(alt 1; background);
+            .color(main 5);
             cursor:text;
         }
         #_disabled {
