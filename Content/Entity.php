@@ -233,24 +233,30 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         // 1 2 3 |4| 5 6 7 (8) 9 10
         $old_priority = $this['priority'];
         $this['priority'] = $rel_dir == 'before' ? $rel_priority : $rel_priority + 1;
+        $q_params = array();
         $q = 'update {{floxim_main_content}} ' .
             'set priority = priority + 1 ' .
-            'where parent_id = %d ' .
-            'and infoblock_id = %d ' .
+            'where ';
+        if ($this['parent_id']) {
+            $q .= 'parent_id = %d and ';
+            $q_params []= $this['parent_id'];
+        }
+
+        $q .=
+            'infoblock_id = %d ' .
             'and priority >= %d ' .
             'and id != %d';
-        $q_params = array(
-            $this['parent_id'],
-            $this['infoblock_id'],
-            $this['priority'],
-            $this['id']
-        );
+
+        $q_params []= $this['infoblock_id'];
+        $q_params []= $this['priority'];
+        $q_params []= $this['id'];
         
         if ($old_priority !== null) {
             $q .= ' and priority < %d';
             $q_params [] = $old_priority;
         }
         array_unshift($q_params, $q);
+
         fx::db()->query($q_params);
     }
 

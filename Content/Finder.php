@@ -411,7 +411,7 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             $conds [] = array($prefix.'materialized_path', $p['materialized_path'] . $p['id'] . '.%', 'like');
         }
         if ($include_parents) {
-            $conds [] = array('id', $parent_ids, 'IN');
+            $conds [] = array($prefix.'id', $parent_ids, 'IN');
         }
         $res = count($conds) === 1 ? $conds[0] : array($conds, null, 'or');
         return $res;
