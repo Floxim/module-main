@@ -411,4 +411,15 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         $no_ib_types = fx::config('content.can_have_no_infoblock');
         return is_array($no_ib_types) && in_array($this['type'], $no_ib_types);
     }
+
+    public function prepareForLivesearch($res, $term = '')
+    {
+        if ( ($parent_entity = $this['parent'])) {
+            $site = fx::data('site', $this['site_id']);
+            if (!$site || $parent_entity['id'] !== $site['index_page_id']) {
+                $res['path'] = array( $parent_entity->getName() );
+            }
+        }
+        return parent::prepareForLivesearch($res, $term);
+    }
 }
