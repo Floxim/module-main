@@ -921,7 +921,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 $entity_type = isset($params['linking_entity_type']) ? $params['linking_entity_type'] : $field['component']['keyword'];
             }
             
-            
+
             $entity_finder = fx::data($entity_type);
             $entity_id = isset($params['entity_id']) && $params['entity_id'] ? (int) $params['entity_id'] : null;
             
@@ -982,7 +982,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 'type' => 'livesearch',
                 'label' => 'Данные',
                 'value' => 'current_page',
-                'parent' => array('scope[type]' => '!~one_page'),
+                'parent' => array('/scope[type]' => '!~one_page'),
                 'values' => $vals,
                 'hidden_on_one_value' => true
             ),
