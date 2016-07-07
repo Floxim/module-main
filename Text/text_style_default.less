@@ -1,0 +1,77 @@
+/*
+name: Default
+tabs:
+    text: Текст
+    links: Ссылки
+vars:
+    font:
+        label: Шрифт
+        type: css-font
+        tab: text
+    color:
+        type: palette
+        transparent: true
+        label: Цвет
+        tab: text
+    max-width:
+        label: Максимальная ширина
+        type: number
+        units: px
+        min: 100
+        max: 2000
+        step: 20
+    margins:
+        label: Расстояние между параграфами
+        type: number
+        min: 0.25
+        max: 5
+        step: 0.25
+        units: rem
+        tab: text
+    link-color:
+        type: palette
+        transparent: true
+        label: Цвет ссылок
+        tab: links
+    link-color-hover:
+        type: palette
+        transparent: true
+        label: Цвет при наведении
+        tab: links
+*/
+.text_style_default (
+    @font: text 17px;
+    @color: main 0;
+    @margins: 1;
+    @link-color: alt 1;
+    @link-color-hover: alt 3;
+    @max-width:800px;
+)
+{
+    max-width:800px;
+    .text-align();
+    p, ul, ol {
+        margin-bottom:@margins;
+    }
+    &, p, ul, ol {
+        .tcolor (@color);
+        .font(@font);
+        &:first-child {
+            margin-top:0;
+        }
+        &:last-child {
+            margin-bottom:0;
+        }
+    }
+    
+    a {
+        .tcolor(@link-color);
+        &:hover {
+            .tcolor(@link-color-hover);
+        }
+    }
+}
+
+.text_style_default {
+    .text_style_default();
+}

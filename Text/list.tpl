@@ -1,10 +1,10 @@
 <div 
     fx:b="text-list .fx_no_add" 
-    fx:styled
     fx:template="list" 
     fx:of="list">
-    {css}text.less{/css}
-    <div fx:e="item" fx:item>
-        {$text}
-    </div>
+    {$items || :text /}
+</div>
+
+<div fx:template="text" fx:e="item" fx:b="text" fx:styled="Стиль текста">
+    {$text}
 </div>

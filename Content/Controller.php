@@ -202,6 +202,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             'context' => $context,
             'fields' => $cond_fields,
             'label' => false,
+            'types' => fx::data('component')->getTypesHierarchy(),
             'tab' => array(
                 'key' => 'conditions',
                 'label' => fx::alang('Conditions', 'controller_component')
