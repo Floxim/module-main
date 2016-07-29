@@ -498,7 +498,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             return null;
         }
         $total_rows = $this->getFinder()->getFoundRows();
-
+        
         if ($total_rows == 0) {
             return null;
         }

@@ -147,7 +147,6 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             function($ib) use ($that, $parent_id) {
                 $ib_parents_finder = $that->getAvailParentsFinder($ib);
                 $parent = $ib_parents_finder->where('id', $parent_id)->one();
-                fx::cdebug($ib['name'], $parent, $ib_parents_finder, $ib_parents_finder->showQuery());
                 return $parent ? true : false;
             }
         );
@@ -174,6 +173,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
             $c_cond = $ib->getParentFinderConditions();
             $conds []= $c_cond;
         }
+        
         $finder->where( $conds, null, 'or' );
         return $finder;
     }

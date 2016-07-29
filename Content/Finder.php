@@ -156,6 +156,16 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         }
         return false;
     }
+    
+    public function removeAdderPlaceholder($collection)
+    {
+        $collection->findRemove(function($e) {
+            if (!$e instanceof Entity) {
+                return false;
+            }
+            return $e->isAdderPlaceholder();
+        });
+    }
 
     /**
      * 
@@ -168,7 +178,9 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
         if ($this->limit && $this->limit['count'] == 1 && count($collection) > 0) {
             return;
         }
-        $collection->findRemove(function($e) use ($collection) {
+        $replace_last = $this->limit && $this->limit['count'] === count($collection);
+        
+        $collection->findRemove(function($e)  {
             if (!$e instanceof Entity) {
                 return false;
             }
@@ -267,6 +279,10 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
                     );
                     if ($add_to_top) {
                         $placeholder_meta['add_to_top'] = true;
+                    }
+                    
+                    if ($replace_last) {
+                        $placeholder_meta['replace_last'] = true;
                     }
                     
                     $placeholder['_meta'] = $placeholder_meta;
