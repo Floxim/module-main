@@ -74,7 +74,14 @@ class Entity extends \Floxim\Main\Content\Entity
             case 'real': default:
                 return $this->getReal('url');
             case 'alias':
-                return $this['linked_page']['url'];
+                $linked_page = $this['linked_page'];
+                if (!$linked_page) {
+                    return '';
+                }
+                if ($linked_page['id'] === $this['id']) {
+                    return $this->getReal('url');
+                }
+                return $linked_page['url'];
             case 'external':
                 $url = $this['external_url'];
                 if (!preg_match("~^(https?://|\#)~", $url)) {
