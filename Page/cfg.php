@@ -3,7 +3,7 @@
 use Floxim\Floxim\System\Fx as fx;
 
 $record_templates = fx::controller($component['keyword'].':record')
-                        ->getAvailableTemplates(fx::env('layout_id'));
+                        ->getAvailableTemplates();
 
 
 $page_config = array(
@@ -46,7 +46,7 @@ $page_config = array(
             )
         ),
         'list_infoblock' => array(
-            'disabled' => false
+            'disabled' => true
         ),
         '*list_infoblock' => array(
             'settings' => (

@@ -175,6 +175,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             ),
             'stored'       => false,
             'tab' => array(
+                'icon' => 'ib_list_selected',
                 'key' => 'selected',
                 'label' => fx::alang('Selected entries')
             )
@@ -204,6 +205,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             'label' => false,
             'types' => fx::data('component')->getTypesHierarchy(),
             'tab' => array(
+                //'icon' => '',
                 'key' => 'conditions',
                 'label' => fx::alang('Conditions', 'controller_component')
             )
@@ -933,6 +935,9 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             }
             $entity->setFieldValues($entity_data);
             $finder = $field->getTargetFinder($entity);
+            if (isset($params['content_type'])) {
+                $finder->hasType($params['content_type']);
+            }
         } else {
             if (!isset($input['content_type'])) {
                 return;
