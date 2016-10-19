@@ -915,8 +915,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             $field = fx::data('field')->getById( (int) $params['relation_field_id']);
             
             if (isset($input['form_data'])) {
-                $form_data = array();
-                parse_str($input['form_data'], $form_data);
+                $form_data = (array) $input['form_data'];
                 $entity_data = isset($form_data['content']) ? $form_data['content'] : array();
                 $entity_type = isset($form_data['content_type']) ? $form_data['content_type'] : null;
             }

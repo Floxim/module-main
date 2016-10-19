@@ -2,6 +2,7 @@
 return array(
    'actions' => array(
        '*list_infoblock' => array(
+            'name' => 'Текст',
             'defaults' => array(
                 '!limit' => 0,
                 '!sorting' => 'manual',
