@@ -60,6 +60,8 @@ $page_config = array(
                 ) : array()
             ),
             'install' => function($list_ib, $ctr) {
+                return;
+                
                 if (!$list_ib['params']['create_record_ib']) {
                     return;
                 }
