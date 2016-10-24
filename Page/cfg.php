@@ -9,11 +9,12 @@ $record_templates = fx::controller($component['keyword'].':record')
 $page_config = array(
     'actions' => array(
         '*record' => array(
-            'name' => fx::alang('%s page', 'system', $component->getItemName('of')),
+            'name' => 'Поля '. $component->getItemName('of'),
             'check_context' => function($page) use ($component) {
                 $res = $page['type'] === $component['keyword'];
                 return $res;
-            }
+            },
+            'scope_type' => 'infoblock_pages'
         ),
         '*neighbours' => array(
             'check_context' => function($page) use ($component) {
