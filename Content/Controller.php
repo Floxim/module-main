@@ -175,7 +175,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             ),
             'stored'       => false,
             'tab' => array(
-                'icon' => 'ib_list_selected',
+                'icon' => 'ib-list-selected',
                 'key' => 'selected',
                 'label' => fx::alang('Selected entries')
             )
@@ -205,7 +205,7 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
             'label' => false,
             'types' => fx::data('component')->getTypesHierarchy(),
             'tab' => array(
-                //'icon' => '',
+                'icon' => 'ib-list-filtered',
                 'key' => 'conditions',
                 'label' => fx::alang('Conditions', 'controller_component')
             )

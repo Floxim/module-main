@@ -38,12 +38,6 @@ $component_infoblocks = fx::data('infoblock')->getContentInfoblocks($component['
 
 return array(
     'actions' => array(
-        /*
-        '*.*' => array(
-            'icon' => self::getAbbr($component['name'])
-        ),
-         * 
-         */
         '*list*' => array(
             'settings' => array(
                 'limit' => array(
@@ -102,10 +96,7 @@ return array(
             )
         ),
         '*list_filtered' => array(
-            //'name' => $component['name'].' '.fx::alang('by filter', 'controller_component'),
             'name' => fx::util()->ucfirst(fx::alang('%s by filter', 'controller_component', $component->getItemName('list'))),
-            'icon_extra' => 'fil',
-            //'settings' => fx::is_admin() ? $this->_config_conditions() : array()
             'settings' => array(
                 'conditions' => function($ctr) {
                     return $ctr->getConditionsField();
@@ -119,11 +110,9 @@ return array(
             )
         ),
         '*list_selected' => array(
-            //'name' => $component['name'].' selected',
             'name' => fx::util()->ucfirst(
                 fx::alang('%s selected', 'controller_component', $component->getItemName('list'))
             ),
-            'icon_extra' => 'sel',
             'settings' => array(
                 'selected' => function($ctr) {
                     return $ctr->getSelectedField();
