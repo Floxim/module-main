@@ -670,14 +670,6 @@ class Controller extends \Floxim\Floxim\Controller\Frontoffice
                 $items->linkers->linkedBy = 'linked_id';
             }
         }
-        /*
-        if (count($items) === 0 && fx::isAdmin()) {
-            $component = $this->getComponent();
-            $ib = fx::data('infoblock', $this->getParam('infoblock_id'));
-            //$this->_meta['hidden_placeholder'] = '';
-        }
-         * 
-         */
     }
 
     public function doListFiltered()
