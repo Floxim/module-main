@@ -201,7 +201,8 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
                 $this['is_branch_published'] = $this['is_published'];
             }
         }
-        $this->handleMove();
+        // handleMove moved to basic
+        //$this->handleMove();
         parent::beforeSave();
     }
     

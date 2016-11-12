@@ -36,6 +36,8 @@ $is_new_infoblock = !$this->getParam('infoblock_id');
 
 $component_infoblocks = fx::data('infoblock')->getContentInfoblocks($component['keyword']);
 
+fx::cdebug(debug_backtrace());
+
 return array(
     'actions' => array(
         '*list*' => array(
