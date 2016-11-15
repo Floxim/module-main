@@ -13,7 +13,7 @@ class Entity extends \Floxim\Main\Content\Entity
                 return $this['linked_page']['url'];
             case 'external':
                 $url = $this['external_url'];
-                if (!preg_match("~^(https?://|\#)~", $url)) {
+                if (!preg_match("~^(https?://|\#)~", $url) && !preg_match("~^/~", $url)) {
                     $url = 'http://'.$url;
                 }
                 return $url;
