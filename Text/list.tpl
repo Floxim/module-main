@@ -6,5 +6,6 @@
 </div>
 
 <div fx:template="text" fx:e="item" fx:b="text" fx:styled="Стиль текста">
+    {css}text.less{/css}
     {$text}
 </div>

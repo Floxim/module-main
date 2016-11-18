@@ -35,7 +35,7 @@ vars:
 .text_style_default (
     @font: text 17px;
     @color: main 0;
-    @margins: 1;
+    @margins: 1em;
     @link-color: alt 1;
     @link-color-hover: alt 3;
 )
@@ -44,16 +44,8 @@ vars:
     p, ul, ol {
         margin-bottom:@margins;
     }
-    &, p, ul, ol {
-        .tcolor (@color);
-        .font(@font);
-        &:first-child {
-            margin-top:0;
-        }
-        &:last-child {
-            margin-bottom:0;
-        }
-    }
+    .tcolor (@color);
+    .font(@font);
     
     a {
         .tcolor(@link-color);
