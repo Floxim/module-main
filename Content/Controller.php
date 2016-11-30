@@ -209,7 +209,6 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
                 'label' => fx::alang('Conditions', 'controller_component')
             )
         );
-        fx::log($field);
         return $field;
     }
 
