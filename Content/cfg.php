@@ -48,9 +48,9 @@ return array(
                 ),
                 'pagination' => array(
                     'label' => fx::alang('Paginate?','controller_component'),
-                    //'type' => 'checkbox',
-                    'type' => 'hidden',
-                    'parent' => array('limit' => '!=')
+                    'type' => 'checkbox',
+                    //'type' => 'hidden',
+                    'parent' => array('limit' =>  '!=')
                 ),
                 'sorting' => array(
                     'name' => 'sorting',

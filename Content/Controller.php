@@ -494,8 +494,8 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
 
     protected function getPagination()
     {
-
-        if (!$this->getParam('pagination')) {
+        $param_value = $this->getParam('pagination');
+        if (!$param_value || $param_value === 'undefined' || $param_value === '0') {
             return null;
         }
         $total_rows = $this->getFinder()->getFoundRows();
