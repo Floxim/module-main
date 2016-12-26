@@ -294,4 +294,21 @@ class Entity extends \Floxim\Main\Content\Entity
         }
         return parent::isAvailableInSelectedBlock();
     }
+    
+    public function getDefaultBoxFields()
+    {
+        return array(
+            array(
+                'type' => 'image',
+                'keyword' => 'image',
+                ''
+            ),
+            array(
+                array('keyword' => 'name', 'field_link' => 1)
+            ),
+            array(
+                array('keyword' => 'description')
+            )
+        );
+    }
 }

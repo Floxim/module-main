@@ -29,6 +29,10 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
         $sources = array();
         $sources [] = fx::path('@module/' . fx::getComponentPath('floxim.main.content') . '/cfg.php');
         $com = $this->getComponent();
+        // component has been removed from DB but for some reason hasen't been removed from source code
+        if (!$com) {
+            return [];
+        }
         $chain = $com->getChain();
         foreach ($chain as $com) {
             $com_file = fx::path('@module/' . fx::getComponentPath($com['keyword']) . '/cfg.php');
