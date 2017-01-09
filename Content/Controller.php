@@ -386,6 +386,9 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
         $items = $items_event['items'];
         
         $this->assign('items', $items);
+        
+        $items->limit = $this->getParam('limit');
+        
         if (($pagination = $this->getPagination())) {
             $this->assign('pagination', $pagination);
         }

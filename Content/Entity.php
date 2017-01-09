@@ -73,7 +73,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
     public function getFormFieldInfoblockId($field)
     {
         $res = $field->getJsField($this);
-        if ($this['infoblock_id']) {
+        if ($this['infoblock_id'] || $this['id']) {
             $res['type'] = 'hidden';
             $res['value'] = $this['infoblock_id'];
         } else {
@@ -89,6 +89,10 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
     public function getFormFieldParentId($field = null)
     {
         if (!$this['id'] && $this['parent_id'] && $this['type'] !== 'floxim.nav.section') {
+            return;
+        }
+        
+        if ($this['parent_id'] && !$this['infoblock_id']) {
             return;
         }
 
