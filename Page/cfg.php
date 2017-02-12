@@ -1,10 +1,10 @@
 <?php
 
 use Floxim\Floxim\System\Fx as fx;
-
+/*
 $record_templates = fx::controller($component['keyword'].':record')
                         ->getAvailableTemplates();
-
+*/
 
 $page_config = array(
     'actions' => array(
@@ -50,16 +50,8 @@ $page_config = array(
             'disabled' => true
         ),
         '*list_infoblock' => array(
-            'settings' => (
-                $is_new_infoblock && count($record_templates) > 0 ? array(
-                    'create_record_ib' => array(
-                        'type' => 'hidden',
-                        'value' => true,
-                        'label' => 'Create record infoblock'
-                    )
-                ) : array()
-            ),
             'install' => function($list_ib, $ctr) {
+                $ctr->createRecordInfoblock($list_ib);
                 return;
                 
                 if (!$list_ib['params']['create_record_ib']) {
@@ -80,14 +72,7 @@ $page_config = array(
                 $rec_ib->save();
             },
             'delete' => function($list_ib, $ctr) {
-                $rec_ib = fx::data('infoblock')
-                            ->where('page_id', $list_ib['page_id'])
-                            ->where('controller', $ctr->getControllerName())
-                            ->where('action', 'record')
-                            ->one();
-                if ($rec_ib) {
-                    $rec_ib->delete();
-                }
+                $ctr->deleteRecordInfoblock($list_ib);
             }
         )
     )

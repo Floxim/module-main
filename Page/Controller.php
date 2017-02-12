@@ -60,4 +60,64 @@ class Controller extends \Floxim\Main\Content\Controller
             'next'    => $next
         );
     }
+    
+    public function createRecordInfoblock($list_ib)
+    {
+        
+        $tvs = fx::data('template_variant')
+                ->where('theme_id', fx::env('theme_id'))
+                ->where('template', 'floxim.ui.record:record')
+                ->all();
+        
+        $record_tv = null;
+
+        foreach ($tvs as $tv) {
+            if ($this->checkTemplateAvailForType($tv)) {
+                $record_tv = $tv;
+                break;
+            }
+        }
+        if (!$record_tv) {
+            return;
+        }
+        
+        $rec_ib = fx::data('infoblock')->create();
+        //$content_type = $this->getContentType();
+        $rec_ib->set(
+            array(
+                'site_id' => $list_ib['site_id'],
+                'controller' => $this->getControllerName(),
+                'action' => 'record',
+                'name' => 'Поля',
+                'scope_type' => 'infoblock_pages',
+                'scope_infoblock_id' => $list_ib['id']
+            )
+        );
+        $rec_ib->save();
+        $list_vis = $list_ib->getVisual();
+        $rec_vis = fx::data('infoblock_visual')->create(
+            [
+                'infoblock_id' => $rec_ib['id'],
+                'area' => $list_vis['area'],
+                'priority' => $list_vis['priority'] + 0.5,
+                'template_variant_id' => $record_tv['id'],
+                'theme_id' => fx::env('theme_id')
+            ]
+        );
+        $rec_vis->save();
+        fx::log('creatd', $rec_ib, $rec_vis);
+    }
+    
+    public function deleteRecordInfoblock($list_ib)
+    {
+        $rec_ib = fx::data('infoblock')
+                    ->where('scope_type', 'infoblock_pages')
+                    ->where('scope_infoblock_id', $list_ib['id'])
+                    ->where('controller', $this->getControllerName())
+                    ->where('action', 'record')
+                    ->one();
+        if ($rec_ib) {
+            $rec_ib->delete();
+        }
+    }
 }
