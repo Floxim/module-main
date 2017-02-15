@@ -31,6 +31,12 @@ vars:
         transparent: true
         label: Цвет при наведении
         tab: links
+    max-width:
+        label: Максимальная ширина
+        type: number
+        step: 50
+        min: 100
+        max: 2000
 */
 .text_style_default (
     @font: text 17px;
@@ -38,8 +44,10 @@ vars:
     @margins: 1em;
     @link-color: alt 1;
     @link-color-hover: alt 3;
+    @max-width:800px;
 )
 {
+    max-width:@max-width;
     .text-align();
     p, ul, ol {
         margin-bottom:@margins;
