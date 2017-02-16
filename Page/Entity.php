@@ -304,7 +304,7 @@ class Entity extends \Floxim\Main\Content\Entity
                 ''
             ),
             array(
-                array('keyword' => 'name', 'field_link' => 1, 'template' => 'header_value')
+                array('keyword' => 'name', 'field_link' => 'link', 'template' => 'header_value')
             ),
             array(
                 array('keyword' => 'description', 'template' => 'text_value')
