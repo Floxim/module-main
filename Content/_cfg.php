@@ -4,6 +4,8 @@ use Floxim\Floxim\System\Fx as fx;
 
 $component = $this->getComponent();
 
+fx::log('contcfg');
+
 $sort_fields = $component
                     ->getAllFields()
                     ->find(function($f) {
