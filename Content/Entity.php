@@ -196,9 +196,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
     {
         if ($this->isModified('parent_id') || ($this['parent_id'] && !$this['materialized_path'])) {
             $new_parent = $this['parent'];
-            if (!$new_parent) {
-                fx::log('no parent!', $this);
-            } else {
+            if ($new_parent) {
                 $this['level'] = $new_parent['level'] + 1;
                 if ($new_parent) {
                     $this['materialized_path'] = $new_parent['materialized_path'] . $new_parent['id'] . '.';
