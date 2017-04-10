@@ -3,6 +3,7 @@ name: Default
 tabs:
     text: Текст
     links: Ссылки
+    lists: Списки
 vars:
     font:
         label: Шрифт
@@ -31,6 +32,50 @@ vars:
         transparent: true
         label: Цвет при наведении
         tab: links
+    ul-style:
+        type: livesearch
+        label: Нумерованный
+        values: 
+            default: По умолчанию
+            markers: Маркеры
+            icons: Иконки
+        tab: lists
+    ul-marker:
+        type: livesearch
+        label: Маркер
+        values:
+            dash: '&mdash;'
+        parent: ul-style == markers
+        tab: lists
+    ul-icon:
+        type: iconpicker
+        label: Иконка
+        tab: lists
+        store_code: true
+        parent: ul-style == icons
+    ul-side-margin:
+        type: number
+        label: Отступ сбоку
+        min: -10
+        max: 10
+        step: 0.25
+        tab: lists
+    li-margin:
+        type: number
+        label: Отступ между пунктами
+        min: 0
+        max: 5
+        step: 0.25
+        tab: lists
+    ul-marker-margin:
+        type: number
+        label: Отступ от маркера
+        min: 0
+        max: 5
+        step: 0.25
+        tab: lists
+export:
+    icon: 'fx::icon( @ul-icon )'
 */
 .text_style_default (
     @font: text 17px;
@@ -38,6 +83,12 @@ vars:
     @margins: 1em;
     @link-color: alt 1;
     @link-color-hover: alt 3;
+    @ul-style: default;
+    @ul-marker: dash;
+    @ul-icon: none;
+    @ul-side-margin: 0rem;
+    @li-margin: 0rem;
+    @ul-marker-margin: 0.5rem;
 )
 {
     .text-align();
@@ -51,6 +102,58 @@ vars:
         .tcolor(@link-color);
         &:hover {
             .tcolor(@link-color-hover);
+        }
+    }
+    
+    
+    & when not(@ul-side-margin = 0rem) {
+        ul {
+            margin-left: @ul-side-margin;
+        }
+    }
+    
+    & when not(@li-margin = 0rem)  {
+        li:not(:last-child) {
+            margin-bottom:@li-margin;
+        }
+    }
+    
+    @marker-width:1rem;
+    
+    & when (@ul-style = icons) and not(@ul-icon = '') {
+        ul {
+            padding:0;
+        }
+        ul > li {
+            list-style-type: none;
+            padding-left: @marker-width + @ul-marker-margin;
+            &:before {
+                display:inline-block;
+                width: @marker-width;
+                margin-left: (@marker-width + @ul-marker-margin) * -1;
+                margin-right: @ul-marker-margin;
+                vertical-align:middle;
+            }
+            .fx_icon(@ul-icon);
+        }
+    }
+    & when (@ul-style = markers) {
+        ul {
+            padding:0;
+        }
+        ul > li {
+            list-style-type: none;
+            padding-left: @marker-width + @ul-marker-margin;
+            &:before {
+                display:inline-block;
+                width: @marker-width;
+                margin-left: (@marker-width + @ul-marker-margin) * -1;
+                margin-right: @ul-marker-margin;
+                
+                & when (@ul-marker = dash) {
+                    content:'—';
+                }
+            }
         }
     }
 }
