@@ -105,7 +105,6 @@ class Controller extends \Floxim\Main\Content\Controller
             ]
         );
         $rec_vis->save();
-        fx::log('creatd', $rec_ib, $rec_vis);
     }
     
     public function deleteRecordInfoblock($list_ib)
