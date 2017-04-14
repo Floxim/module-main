@@ -25,13 +25,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         if ($this->isActive) {
             return $this->isActive;
         }
-        $c_page_id = fx::env('page_id');
-        if (!$c_page_id) {
-            return false;
-        }
-        $path = fx::env('page')->getPath()->getValues('id');
-        $path [] = $c_page_id;
-
+        $path = fx::env('path')->getValues('id');
         return $this->isActive = in_array($this['id'], $path);
     }
 
