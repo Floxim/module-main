@@ -314,15 +314,6 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
         }
     }
 
-    public function doRecord()
-    {
-        $page = fx::env('page');
-        $this->assign('item', $page);
-        $this->trigger('result_ready');
-    }
-
-    
-
     protected function getFakeItems($count = 4)
     {
         $coms = $this->getComponent()->getAllVariants()->find('is_abstract', 0)->getValues();
