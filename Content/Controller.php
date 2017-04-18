@@ -700,6 +700,7 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
         }
         $term = isset($input['term']) ? $input['term'] : '';
         $limit = isset($input['limit']) ? $input['limit'] : 20;
+        
         $res = $finder->livesearch($term, $limit, $id_field);
         
         // sort items in the original way
