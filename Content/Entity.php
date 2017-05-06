@@ -204,61 +204,6 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         parent::beforeSave();
     }
     
-    public function handleMove()
-    {
-        $rel_item_id = null;
-        if (isset($this['__move_before'])) {
-            $rel_item_id = $this['__move_before'];
-            $rel_dir = 'before';
-        } elseif (isset($this['__move_after'])) {
-            $rel_item_id = $this['__move_after'];
-            $rel_dir = 'after';
-        }
-        if (!$rel_item_id) {
-            return;
-        }
-        $rel_item = fx::content($rel_item_id);
-        if (!$rel_item) {
-            return;
-        }
-        $rel_priority = fx::db()->getVar(array(
-            'select priority from {{floxim_main_content}} where id = %d',
-            $rel_item_id
-        ));
-        //fx::debug($rel_priority, $rel_item_id);
-        if ($rel_priority === false) {
-            return;
-        }
-        // 1 2 3 |4| 5 6 7 (8) 9 10
-        $old_priority = $this['priority'];
-        $this['priority'] = $rel_dir == 'before' ? $rel_priority : $rel_priority + 1;
-        $q_params = array();
-        $q = 'update {{floxim_main_content}} ' .
-            'set priority = priority + 1 ' .
-            'where ';
-        if ($this['parent_id']) {
-            $q .= 'parent_id = %d and ';
-            $q_params []= $this['parent_id'];
-        }
-
-        $q .=
-            'infoblock_id = %d ' .
-            'and priority >= %d ' .
-            'and id != %d';
-
-        $q_params []= $this['infoblock_id'];
-        $q_params []= $this['priority'];
-        $q_params []= $this['id'];
-        
-        if ($old_priority !== null) {
-            $q .= ' and priority < %d';
-            $q_params [] = $old_priority;
-        }
-        array_unshift($q_params, $q);
-
-        fx::db()->query($q_params);
-    }
-
     /*
      * Get the id of the information block where to add the linked objects on the field $link_field
      */
