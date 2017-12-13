@@ -79,9 +79,18 @@ class Finder extends \Floxim\Floxim\Component\Basic\Finder
             );
             $content_by_type = fx::collection($res)->getValues('cnt', 'type');
         }
-        
         $com = $this->getComponent();
-        if (isset($content_by_type[$com['keyword']])) {
+        $kw = $com['keyword'];
+        
+        if (
+            !$com->isInstanceOf('floxim.main.content') && 
+            !isset($content_by_type[$kw])
+        ) {
+            $content_by_type[$kw] = fx::db()->getVar(
+                'select count(*) from {{'.$com->getContentTable().'}}'
+            );
+        }
+        if (isset($content_by_type[$kw]) && $content_by_type[$kw]) {
             return true;
         }
         

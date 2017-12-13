@@ -655,29 +655,39 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
             $entity_data = array();
             
             $field = fx::data('field')->getById( (int) $params['relation_field_id']);
-            
-            if (isset($input['form_data'])) {
-                $form_data = (array) $input['form_data'];
-                $entity_data = isset($form_data['content']) ? $form_data['content'] : array();
-                $entity_type = isset($form_data['content_type']) ? $form_data['content_type'] : null;
-            }
-            if (!$entity_type) {
-                $entity_type = isset($params['linking_entity_type']) ? $params['linking_entity_type'] : $field['component']['keyword'];
-            }
-            
 
-            $entity_finder = fx::data($entity_type);
-            $entity_id = isset($params['entity_id']) && $params['entity_id'] ? (int) $params['entity_id'] : null;
-            
-            if ($entity_id) {
-                $entity = $entity_finder->getById($entity_id);
+            if ($field['type'] === 'multilink' && ($m2mf = $field->getM2MField())) {
+                $finder = fx::data($m2mf->getTargetName());
+                if (isset($field['format']['livesearch_m2m_cond'])) {
+                    $conds = json_decode($field['format']['livesearch_m2m_cond'], true);
+                    $finder->applyConditions($conds);
+                    fx::log($conds, $finder);
+                }
             } else {
-                $entity = $entity_finder->create();
-            }
-            $entity->setFieldValues($entity_data);
-            $finder = $field->getTargetFinder($entity);
-            if (isset($params['content_type'])) {
-                $finder->hasType($params['content_type']);
+
+                if (isset($input['form_data'])) {
+                    $form_data = (array)$input['form_data'];
+                    $entity_data = isset($form_data['content']) ? $form_data['content'] : array();
+                    $entity_type = isset($form_data['content_type']) ? $form_data['content_type'] : null;
+                }
+                if (!$entity_type) {
+                    $entity_type = isset($params['linking_entity_type']) ? $params['linking_entity_type'] : $field['component']['keyword'];
+                }
+
+
+                $entity_finder = fx::data($entity_type);
+                $entity_id = isset($params['entity_id']) && $params['entity_id'] ? (int)$params['entity_id'] : null;
+
+                if ($entity_id) {
+                    $entity = $entity_finder->getById($entity_id);
+                } else {
+                    $entity = $entity_finder->create();
+                }
+                $entity->setFieldValues($entity_data);
+                $finder = $field->getTargetFinder($entity);
+                if (isset($params['content_type'])) {
+                    $finder->hasType($params['content_type']);
+                }
             }
         } else {
             if (!isset($input['content_type'])) {
