@@ -1,0 +1,76 @@
+/*
+tabs:
+    main: Основное
+    separator: Разделитель
+vars:
+    margin_hor:
+        label: Расстояние ↔
+        type: number
+        step: 0.1
+        min: 0
+        max: 5
+        tab: main
+    margin_ver:
+        label: Расстояние ↕
+        type: number
+        min: 0
+        max: 5
+        step: 0.1
+        tab: main
+    separator:
+        type: livesearch
+        label: Разделитель
+        values:
+            icon: Иконка
+            "'/'": /
+            "'>'": '>'
+            "'>>>'": >>>
+        tab: separator
+    separator_icon:
+        type: iconpicker
+        label: Иконка-разделитель
+        store_code: true
+        parent: separator == icon
+        tab: separator
+    separator_color:
+        label: Цвет
+        type: palette
+        transparent: true
+        tab: separator
+    separator_size:
+        label: Размер
+        type: number
+        min: 18
+        max: 48
+        step: 1
+        tab: separator
+ */
+.breadcrumbs_style_default(
+  @separator: icon;
+  @separator_icon: fa angle-double-right f101;
+  @margin_hor: 0.5rem;
+  @margin_ver: 1rem;
+  @separator_color: main 1;
+  @separator_size: 18px;
+) {
+  #__item {
+    &:not(:last-of-type) {
+      margin-right: @margin_hor;
+    }
+    &:after {
+      display: inline-block;
+      margin-left: @margin_hor;
+      .tcolor(@separator_color);
+      .font_size(@separator_size);
+      & when (@separator = icon) {
+        .fx_icon_value(@separator_icon);
+      }
+      & when not(@separator = icon) {
+        content: @separator;
+      }
+    }
+  }
+  #__header {
+    margin-top:@margin_ver;
+  }
+}
