@@ -3,9 +3,6 @@
         <a href="{$url}" fx:e="link" fx:nows>
             <span fx:b="floxim.main.text:text" fx:styled="label:Стиль текста">{$name}</span>
         </a>
-        {*
-        {if $position != $total}<span>{%separator} / {/%}</span>{/if}
-        *}
     </span>
     
     {set $header}
