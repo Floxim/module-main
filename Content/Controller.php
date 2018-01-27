@@ -661,7 +661,6 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
                 if (isset($field['format']['livesearch_m2m_cond'])) {
                     $conds = json_decode($field['format']['livesearch_m2m_cond'], true);
                     $finder->applyConditions($conds);
-                    fx::log($conds, $finder);
                 }
             } else {
 
