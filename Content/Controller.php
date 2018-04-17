@@ -76,7 +76,7 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
             case 'custom':
             case 'all_pages':
             case 'infoblock_pages':
-                $parent_type = $ib['params']['parent_type'];
+                $parent_type = isset($ib['params']['parent_type']) ? $ib['params']['parent_type'] : null;
                 if ($parent_type === 'current_page') {
                     if ($ib['scope_type'] === 'custom') {
                         $scope = $ib['scope_entity'];
@@ -709,7 +709,7 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
         }
         $term = isset($input['term']) ? $input['term'] : '';
         $limit = isset($input['limit']) ? $input['limit'] : 20;
-        
+
         $res = $finder->livesearch($term, $limit, $id_field);
         
         // sort items in the original way

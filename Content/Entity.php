@@ -297,7 +297,9 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         $path = $this['materialized_path'];
         if (!empty($path)) {
             $path = explode(".", trim($path, '.'));
-            $this->parent_ids = $path;
+            $this->parent_ids = array_map(function($id) {
+               return (int) $id;
+            }, $path);
             return $this->parent_ids;
         }
 
@@ -322,7 +324,14 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         }
         $path_ids = $this->getParentIds();
         $path_ids [] = $this['id'];
-        $this->path = fx::data('floxim.main.content')->where('id', $path_ids)->order('level','asc')->all();
+        //fx::cdebug($path_ids);
+        $this->path = fx::data('floxim.main.content')
+            ->where('id', $path_ids)
+            // ->order('level','asc')
+            ->all()
+            ->sort(function($el) use ($path_ids) {
+                return array_search($el['id'], $path_ids);
+            });
         return $this->path;
     }
     

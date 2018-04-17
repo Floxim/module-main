@@ -22,6 +22,10 @@ vars:
         step: 0.25
         units: rem
         tab: text
+    shadow:
+        type: css-shadow
+        shadowType: text
+        tab: text
     link-color:
         type: palette
         transparent: true
@@ -81,6 +85,7 @@ export:
     @font: text 17px;
     @color: main 0;
     @margins: 1em;
+    @shadow: none;
     @link-color: alt 1;
     @link-color-hover: alt 3;
     @ul-style: default;
@@ -97,7 +102,9 @@ export:
     }
     .tcolor (@color);
     .font(@font);
-    
+
+    .text-shadow(@shadow);
+
     a, a& {
         .tcolor(@link-color);
         &:hover {
