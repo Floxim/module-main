@@ -262,7 +262,7 @@ class Entity extends \Floxim\Floxim\Component\Basic\Entity
         /*
          * Update level and mat.path for children if item moved somewhere
          */
-        if ($this->isModified('parent_id')) {
+        if ($this->isModified('parent_id') && isset($this->modified_data['materialized_path'])) {
             $old_path = $this->modified_data['materialized_path'] . $this['id'] . '.';
             // new path for descendants
             $new_path = $this['materialized_path'] . $this['id'] . '.';
