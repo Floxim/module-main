@@ -664,15 +664,13 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
                 }
             } else {
 
-                if (isset($input['form_data'])) {
+                if (isset($params['linking_entity_type'])) {
+                    $entity_type = $params['linking_entity_type'];
+                } elseif (isset($input['form_data'])) {
                     $form_data = (array)$input['form_data'];
                     $entity_data = isset($form_data['content']) ? $form_data['content'] : array();
                     $entity_type = isset($form_data['content_type']) ? $form_data['content_type'] : null;
                 }
-                if (!$entity_type) {
-                    $entity_type = isset($params['linking_entity_type']) ? $params['linking_entity_type'] : $field['component']['keyword'];
-                }
-
 
                 $entity_finder = fx::data($entity_type);
                 $entity_id = isset($params['entity_id']) && $params['entity_id'] ? (int)$params['entity_id'] : null;
@@ -682,10 +680,14 @@ class Controller extends \Floxim\Floxim\Component\Basic\Controller
                 } else {
                     $entity = $entity_finder->create();
                 }
-                $entity->setFieldValues($entity_data);
-                $finder = $field->getTargetFinder($entity);
-                if (isset($params['content_type'])) {
-                    $finder->hasType($params['content_type']);
+                if ($entity) {
+                    $entity->setFieldValues($entity_data);
+                    $finder = $field->getTargetFinder($entity);
+                    if (isset($params['content_type'])) {
+                        $finder->hasType($params['content_type']);
+                    }
+                } else {
+                    fx::log('wtf, no entity', $entity_finder, $entity_id, $form_data, $params, $input, $field);
                 }
             }
         } else {
